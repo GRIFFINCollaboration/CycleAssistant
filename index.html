@@ -3,6 +3,8 @@
 		<link rel="stylesheet" type="text/css" href="CycleAssistant.css"/>
 
 		<script src="branding.js" type="text/javascript"></script>
+		<script src="lib/x-tag-components.js" type="text/javascript"></script>
+		<script src="lib/xInputTable.js" type="text/javascript"></script>
 
 	</head>
 
@@ -19,7 +21,32 @@
 			</div>
 
 			<div id='mainContent'>
+				<div id='cycleDefinition'>
+					<h2>Cycle Definition</h2>
+					<table>
+						<tr>
+							<td class='leadLabel'>Beam On</td>
+							<td><input id='onTime' type='number' min='0' value='1000'></input></td>
+							<td class='unitLabel'>ms</td>
+						</tr>
+						<tr>
+							<td class='leadLabel'>Beam Off</td>
+							<td><input id='offTime' type='number' min='0' value='1000'></input></td>
+							<td class='unitLabel'>ms</td>
+						</tr>
+						<tr>
+							<td class='leadLabel'>Expt. Duration</td>
+							<td><input id='expDuration' type='number' min='0' value='144'></input></td>
+							<td class='unitLabel'>h</td>
+						</tr>
+					</table>
+				</div>
 
+				<div id='isotopeList'>
+					<h2>Isotope List</h2>
+					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life (s),Yield/s,Hide/Show' types='text,number,number,checkbox' values=',0,0'></x-InputTable>
+					<button id='addrow'>New Isotope</button>
+				</div>
 			</div>
 
 			<div id='push'></div>
@@ -60,14 +87,21 @@
 		</div>
 
 		<script>
-			//set up branding
-			footerImage('footerImage', 2, '#444444');
+			document.addEventListener('DOMComponentsLoaded', function(){
+				//set up branding
+				footerImage('footerImage', 2, '#444444');
 
-			//kern title nicely
-			var headlineWidth = document.getElementById('headline').offsetWidth,
-				sublineWidth  = document.getElementById('subline').offsetWidth,
-				sublineKern   = (headlineWidth - sublineWidth) / 6;
-			document.getElementById('subline').style.letterSpacing = sublineKern;
+				//kern title nicely
+				var headlineWidth = document.getElementById('headline').offsetWidth,
+					sublineWidth  = document.getElementById('subline').offsetWidth,
+					sublineKern   = (headlineWidth - sublineWidth) / 6;
+				document.getElementById('subline').style.letterSpacing = sublineKern;
+
+				//plug isotope table addrow button in
+				document.getElementById('addrow').onclick = function(){
+					document.getElementById('isotopeTable').insertRow()
+				}
+			});
 		</script>
 
 	</body>
