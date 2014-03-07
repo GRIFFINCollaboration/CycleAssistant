@@ -1,10 +1,14 @@
 <html>
 	<head>
 		<link rel="stylesheet" type="text/css" href="CycleAssistant.css"/>
+		<link rel='stylesheet' type='text/css' href='lib/brick-1.0.0.min.css'>
 
-		<script src="branding.js" type="text/javascript"></script>
-		<script src="lib/x-tag-components.js" type="text/javascript"></script>
-		<script src="lib/xInputTable.js" type="text/javascript"></script>
+		<script type="text/javascript" src="lib/dygraph-combined.js"></script>
+		<script type="text/javascript" src="lib/dygraph-extra.js"></script>
+		<script type="text/javascript" src="branding.js"></script>
+		<script type="text/javascript" src="CycleAssistant.js"></script>
+		<script type='text/javascript' src='lib/brick-1.0.0.min.js'></script>
+		<script type="text/javascript" src="lib/xInputTable.js"></script>
 
 	</head>
 
@@ -21,6 +25,27 @@
 			</div>
 
 			<div id='mainContent'>
+				<x-deck id='plotDeck' selected-index='0' loop='true' transition-type='slide-left'>
+					<x-card id='duringPlotCard'>
+						<div id='duringPlot'></div>
+					</x-card>
+
+					<x-card id='afterPlotCard'>
+						<div id='afterPlot'></div>
+					</x-card>
+				</x-deck>
+
+				<div id='areaSelect'>
+					<div id='toBeforeTextWrap'>&#10218</div>
+					<input type='radio' name='area' id='tape' value='tape' checked='true'></input>
+					<label id='tapeLabel' for='tape'>On the Tape</label>
+					<input type='radio' name='area' id='chamber' value='chamber'></input>
+					<label id='chamberLabel' for='chamber'>In the Chamber</label>
+					<input type='radio' name='area' id='beamline' value='beamline'></input>
+					<label id='beamlineLabel' for='beamline'>Along the Beamline</label>
+					<div id='toAfterTextWrap'>&#10219</div>
+				</div>
+
 				<div id='cycleDefinition'>
 					<h2>Cycle Definition</h2>
 					<table>
@@ -44,7 +69,7 @@
 
 				<div id='isotopeList'>
 					<h2>Isotope List</h2>
-					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life (s),Yield/s,Hide/Show' types='text,number,number,checkbox' values=',0,0'></x-InputTable>
+					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life (s),Yield/s,Hide/Show' types='text,number,number,checkbox' values=',1,0'></x-InputTable>
 					<button id='addrow'>New Isotope</button>
 				</div>
 			</div>
@@ -101,6 +126,68 @@
 				document.getElementById('addrow').onclick = function(){
 					document.getElementById('isotopeTable').insertRow()
 				}
+
+				//plug in x-deck toggles
+				document.getElementById('toAfterTextWrap').onclick = function(){
+					document.getElementById('plotDeck').nextCard();
+					generateDuringGraph();
+					generateAfterGraph();
+				}
+				document.getElementById('toBeforeTextWrap').onclick = function(){
+					document.getElementById('plotDeck').nextCard();
+					generateDuringGraph();
+					generateAfterGraph();
+				}
+
+				//plug in x-inputTable callback
+				document.getElementById('isotopeTable').changeCallback = function(){
+					tableScrape();
+					generateDuringGraph();
+					generateAfterGraph();
+				};
+
+				//set up cycle parameter store:
+				window.cycleParameters = {
+					'beamOn' : parseInt(document.getElementById('onTime').value, 10),
+					'beamOff' : parseInt(document.getElementById('offTime').value, 10),
+					'duration' : parseFloat(document.getElementById('expDuration').value),
+					'dutyCycle' : 0.5
+				}
+				//plug in cycle parameter table callbacks:
+				document.getElementById('onTime').onchange = function(){
+					window.cycleParameters.beamOn = parseInt(this.value, 10);
+					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
+					generateDuringGraph();
+					generateAfterGraph();
+				}
+				document.getElementById('offTime').onchange = function(){
+					window.cycleParameters.beamOff = parseInt(this.value, 10);
+					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
+					generateDuringGraph();
+					generateAfterGraph();
+				}
+				document.getElementById('expDuration').onchange = function(){
+					window.cycleParameters.duration = parseFloat(this.value);
+					generateDuringGraph();
+					generateAfterGraph();			
+				}
+
+				//set up region selector store and callback:
+				window.region = 'tape';
+				var areaRadio = document.querySelectorAll('div#areaSelect input');
+				[].forEach.call(areaRadio, function(rad){
+					rad.onchange = function(){
+						window.region = this.value;
+						generateDuringGraph();
+						generateAfterGraph();
+					}
+				});
+
+				//plot something to begin with:
+				tableScrape();
+				generateDuringGraph();
+				generateAfterGraph();
+
 			});
 		</script>
 

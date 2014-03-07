@@ -97,14 +97,20 @@ div#mainContent{
 	padding-bottom: 2em;
 	padding-left: calc((100% - 1120px) / 2);
     padding-right: calc((100% - 1120px) / 2);
+    width: 100%;
     display: inline-block;
+    text-align: center;
 }
 
+/*/////////////////*/
+/*Cycle defn styles*/
+/*/////////////////*/
 div#cycleDefinition, div#isotopeList{
 	background-color: #333333;
 	border-radius:1em;
 	padding:1em;
-	float:left;
+	display:inline-table;
+	text-align: left;
 	margin-right: 1em;
 }
 
@@ -136,6 +142,9 @@ td.unitLabel{
 	padding-left: 0.5em;
 }
 
+/*///////////////////*/
+/*isotope list styles*/
+/*///////////////////*/
 div#isotopeList input{
 	font-size: 120%;
 	line-height: 2em;
@@ -155,12 +164,13 @@ input[type='checkbox'] + label{
 	width:1.2em;
 	height:1.2em;
 	border-radius: 0.6em;
-	display:block;
+	display:inline-block;
 	border:2px solid #111111;
 	background-color: #ffffff;
 	background: -webkit-linear-gradient(top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
 	background: -moz-linear-gradient(top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
 	background: linear-gradient(top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
+	cursor: pointer;
 	transition:background-color 0.3s; 
 	-moz-transition:background-color 0.3s; 
 	-webkit-transition:background-color 0.3s;
@@ -168,6 +178,10 @@ input[type='checkbox'] + label{
 
 input[type='checkbox']:checked + label{
 	background-color: #00FF00;
+}
+
+x-inputTable tr td:nth-child(4){
+	text-align: center;
 }
 
 button{
@@ -179,6 +193,98 @@ button{
 	border:0px;
 	color:#EEEEEE;
 	background-color: #222222;
+}
+
+/*////////////////*/
+/*plot area styles*/
+/*////////////////*/
+x-deck#plotDeck{
+	height:65%;
+	width:100%;
+	float:left;
+	margin-bottom: 1em;
+}
+
+div#toAfterWrap{
+	width:10%;
+	height:60%;
+	display:inline-block;
+	padding-top: calc(30%);
+}
+
+div#duringPlot, div#afterPlot{
+	width: 100% !important;
+	height: 100% !important;
+}
+
+/*axes and labels*/
+.dygraph-axis-label{
+	color: #999999;
+	font-size: 120%;
+}
+
+.dygraph-legend{
+	background: rgba(0,0,0,0.3) !important;
+	font-size:200% !important;
+	width: 8.5em !important;
+	left: auto !important;
+	right: 0px !important;
+	padding:0.5em;
+}
+
+.dygraph-legend span{
+	float:left;
+	clear:both;
+}
+
+/*////////////*/
+/*view toggler*/
+/*////////////*/
+div#toAfterTextWrap, div#toBeforeTextWrap{
+	text-align: center;
+	cursor:pointer;
+	font-size: 150%;
+	border-radius: 5px;
+	background-color: #111111;
+	padding:0.5em;
+	display:inline-block;
+	-webkit-transition: color 0.3s ease, text-shadow 0.3s ease;
+	-moz-transition: color 0.3s ease, text-shadow 0.3s ease;
+	transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+div#toAfterTextWrap:hover, div#toBeforeTextWrap:hover{
+	color:#FFFFFF;
+	text-shadow: 1px 0px 2px #FFFFFF;
+}
+
+/*////////////////////*/
+/*area selector styles*/
+/*////////////////////*/
+
+div#areaSelect{
+	margin-bottom: 1em;
+	text-align: center;
+}
+
+div#areaSelect input[type=radio]{
+	display:none;
+}
+
+div#areaSelect input[type=radio] + label{
+	display:inline-block;
+	background-color: #111111;
+	cursor: pointer;
+	font-size: 150%;
+	padding: 0.5em;
+	border-radius: 5px;
+	transition:background-color 0.3s; 
+	-moz-transition:background-color 0.3s; 
+	-webkit-transition:background-color 0.3s;
+}
+
+div#areaSelect input[type=radio]:checked + label{
+	background-color: #666666;
 }
 
 /*Footer and footer-related styles////////////////////////////////////////////////////*/
