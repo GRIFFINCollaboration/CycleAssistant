@@ -9,6 +9,7 @@
 		<script type="text/javascript" src="CycleAssistant.js"></script>
 		<script type='text/javascript' src='lib/brick-1.0.0.min.js'></script>
 		<script type="text/javascript" src="lib/xInputTable.js"></script>
+		<script type="text/javascript" src="lib/xStateFlag.js"></script>
 
 	</head>
 
@@ -30,20 +31,28 @@
 						<div id='duringPlot'></div>
 					</x-card>
 
+					<x-card id='cyclePlotCard'>
+						<div id='cyclePlot'></div>
+					</x-card>
+
 					<x-card id='afterPlotCard'>
 						<div id='afterPlot'></div>
 					</x-card>
 				</x-deck>
 
+				<div id='navWrap'>
+					<div id='previousCardWrap'>&#10218</div>
+					<x-StateFlag id='stateFlag' nStates='3'></x-StateFlag>
+					<div id='nextCardWrap'>&#10219</div>
+				</div>
+
 				<div id='areaSelect'>
-					<div id='toBeforeTextWrap'>&#10218</div>
 					<input type='radio' name='area' id='tape' value='tape' checked='true'></input>
 					<label id='tapeLabel' for='tape'>On the Tape</label>
 					<input type='radio' name='area' id='chamber' value='chamber'></input>
 					<label id='chamberLabel' for='chamber'>In the Chamber</label>
 					<input type='radio' name='area' id='beamline' value='beamline'></input>
 					<label id='beamlineLabel' for='beamline'>Along the Beamline</label>
-					<div id='toAfterTextWrap'>&#10219</div>
 				</div>
 
 				<div id='cycleDefinition'>
@@ -128,22 +137,26 @@
 				}
 
 				//plug in x-deck toggles
-				document.getElementById('toAfterTextWrap').onclick = function(){
-					document.getElementById('plotDeck').nextCard();
-					generateDuringGraph();
-					generateAfterGraph();
+				document.getElementById('previousCardWrap').onclick = function(){
+					document.getElementById('plotDeck').previousCard();
+					document.getElementById('stateFlag').previousState();
+					repaint();
 				}
-				document.getElementById('toBeforeTextWrap').onclick = function(){
+				document.getElementById('nextCardWrap').onclick = function(){
 					document.getElementById('plotDeck').nextCard();
-					generateDuringGraph();
-					generateAfterGraph();
+					document.getElementById('stateFlag').nextState();
+					repaint();
+				}
+				//and StateIndex onclick callbacks:
+				document.getElementById('stateFlag').gotoCallback = function(){
+					document.getElementById('plotDeck').showCard(document.getElementById('stateFlag').state);
+					repaint();
 				}
 
 				//plug in x-inputTable callback
 				document.getElementById('isotopeTable').changeCallback = function(){
 					tableScrape();
-					generateDuringGraph();
-					generateAfterGraph();
+					repaint();
 				};
 
 				//set up cycle parameter store:
@@ -157,19 +170,16 @@
 				document.getElementById('onTime').onchange = function(){
 					window.cycleParameters.beamOn = parseInt(this.value, 10);
 					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
-					generateDuringGraph();
-					generateAfterGraph();
+					repaint();
 				}
 				document.getElementById('offTime').onchange = function(){
 					window.cycleParameters.beamOff = parseInt(this.value, 10);
 					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
-					generateDuringGraph();
-					generateAfterGraph();
+					repaint();
 				}
 				document.getElementById('expDuration').onchange = function(){
 					window.cycleParameters.duration = parseFloat(this.value);
-					generateDuringGraph();
-					generateAfterGraph();			
+					repaint();		
 				}
 
 				//set up region selector store and callback:
@@ -178,15 +188,13 @@
 				[].forEach.call(areaRadio, function(rad){
 					rad.onchange = function(){
 						window.region = this.value;
-						generateDuringGraph();
-						generateAfterGraph();
+						repaint();
 					}
 				});
 
 				//plot something to begin with:
 				tableScrape();
-				generateDuringGraph();
-				generateAfterGraph();
+				repaint();
 
 			});
 		</script>

@@ -24,10 +24,10 @@ function tableScrape(){
     });
 }
 
-//create the CSV string for the during graph if state == 'during', or after if state == 'after'
+//create the CSV string for the experiment graph if state == 'during', cycle graph if state == 'cycle', or after if state == 'after'
 function generateDataCSV(state){
-	var data = 'Time[h]',
-		nPoints = 1000,
+	var data = (state == 'cycle') ? 'Time[s]' : 'Time[h]',
+		nPoints = 800,
 		key, i, nextline;
 
 	//CSV header row:
@@ -35,7 +35,7 @@ function generateDataCSV(state){
 		data += ',';
 		data += key;
 	}
-	if(data == 'Time[h]')
+	if(data == 'Time[h]' || data == 'Time[s]')
 		data += ','; //blank column for page load
 	data += '\n';
 
@@ -43,6 +43,8 @@ function generateDataCSV(state){
 		//add the x-value to the list:
 		if(state == 'during')
 			data += (window.cycleParameters.duration / nPoints)*i;
+		else if(state == 'cycle')
+			data += (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints/1000)*i
 		else if (state == 'after')
 			data += (1000 / nPoints)*i;
 		//add a y-value for each isotope:
@@ -52,6 +54,8 @@ function generateDataCSV(state){
 				nextline += ',';
 				if(state == 'during')
 					nextline += activityDuring(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration / nPoints)*i*3600);
+				else if(state == 'cycle')
+					nextline += activityDuring(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i/1000);
 				else if(state == 'after')
 					nextline += activityAfter(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
 			}
@@ -67,23 +71,24 @@ function generateDataCSV(state){
 	return data;
 }
 
-//generate the dygraph for the 'during' state:
-function generateDuringGraph(){
-	window.duringPlot = new Dygraph(document.getElementById('duringPlot'), generateDataCSV('during'), {
-		title: 'Activity During Experiment',
-		xlabel: 'Time [h]',
+//generate the dygraph for the <state>, either 'during' or 'cycle':
+function generateDuringGraph(state){
+	window.duringPlot = new Dygraph(document.getElementById(state+'Plot'), generateDataCSV(state), {
+		title: (state=='during') ? 'Activity During Experiment' : 'Activity Over Three Cycles',
+		xlabel: (state=='during') ? 'Time [h]' : 'Time [s]',
 		ylabel: 'Activity [counts/s]',
 		sigFigs: 2,
 		strokeWidth: 4,
 		yAxisLabelWidth: 75,
 		xAxisHeight: 30,
 		highlightCircleSize: 6,
+		titleHeight: 50,
 		legend: 'always',
 		colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
 		axes:{
 			x: {
 				valueFormatter: function(number, opts, dygraph){
-						return number.toFixed() + ' hours';
+						return number.toFixed((state=='during') ? 0 : 2) + ((state=='during') ? ' hours' : ' seconds');
 				},
 			}
 		}
@@ -101,6 +106,7 @@ function generateAfterGraph(){
 		yAxisLabelWidth: 75,
 		xAxisHeight: 30,
 		highlightCircleSize: 6,
+		titleHeight: 50,
 		legend: 'always',
 		colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
 		axes:{
@@ -130,4 +136,16 @@ function activityAfter(yield, lifetime, time){
 	var peakActivity = activityDuring(yield, lifetime, window.cycleParameters.duration*3600);
 
 	return peakActivity * Math.exp(-1*lifetime*time);
+}
+
+//repaint dygraphs as necessary:
+function repaint(){
+	var onDisplay = document.getElementById('stateFlag').state;
+
+	if(onDisplay == 0)
+		generateDuringGraph('during');
+	else if(onDisplay == 1)
+		generateDuringGraph('cycle');
+	else if(onDisplay == 2)
+		generateAfterGraph();
 }

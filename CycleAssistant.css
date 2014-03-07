@@ -154,6 +154,12 @@ div#isotopeList input{
 	color:#EEEEEE;
 	width: 6em;
 	padding:0 0 0 0.5em;
+	margin-right: 2px;
+}
+
+td.deleteRow{
+	padding-left: 1em;
+	text-align: center;
 }
 
 input[type=checkbox]{
@@ -195,6 +201,18 @@ button{
 	background-color: #222222;
 }
 
+button.deleteRow{
+	color:#999999;
+	font-size: 120%;
+	transition:color 0.3s ease; 
+	-moz-transition:color 0.3s ease; 
+	-webkit-transition:color 0.3s ease;
+}
+
+button.deleteRow:hover{
+	color: #FF0000;
+}
+
 /*////////////////*/
 /*plot area styles*/
 /*////////////////*/
@@ -205,14 +223,7 @@ x-deck#plotDeck{
 	margin-bottom: 1em;
 }
 
-div#toAfterWrap{
-	width:10%;
-	height:60%;
-	display:inline-block;
-	padding-top: calc(30%);
-}
-
-div#duringPlot, div#afterPlot{
+div#duringPlot, div#afterPlot, div#cyclePlot{
 	width: 100% !important;
 	height: 100% !important;
 }
@@ -235,27 +246,6 @@ div#duringPlot, div#afterPlot{
 .dygraph-legend span{
 	float:left;
 	clear:both;
-}
-
-/*////////////*/
-/*view toggler*/
-/*////////////*/
-div#toAfterTextWrap, div#toBeforeTextWrap{
-	text-align: center;
-	cursor:pointer;
-	font-size: 150%;
-	border-radius: 5px;
-	background-color: #111111;
-	padding:0.5em;
-	display:inline-block;
-	-webkit-transition: color 0.3s ease, text-shadow 0.3s ease;
-	-moz-transition: color 0.3s ease, text-shadow 0.3s ease;
-	transition: color 0.3s ease, text-shadow 0.3s ease;
-}
-
-div#toAfterTextWrap:hover, div#toBeforeTextWrap:hover{
-	color:#FFFFFF;
-	text-shadow: 1px 0px 2px #FFFFFF;
 }
 
 /*////////////////////*/
@@ -285,6 +275,57 @@ div#areaSelect input[type=radio] + label{
 
 div#areaSelect input[type=radio]:checked + label{
 	background-color: #666666;
+}
+
+/*/////////*/
+/*Nav Panel*/
+/*/////////*/
+
+div#navWrap{
+	display:inline-block;
+	margin-bottom: 1em;
+}
+
+div#previousCardWrap, div#nextCardWrap{
+	text-align: center;
+	cursor:pointer;
+	font-size: 100%;
+	border-radius: 5px;
+	background-color: #111111;
+	padding:0.5em;
+	float:left;
+	-webkit-transition: color 0.3s ease, text-shadow 0.3s ease;
+	-moz-transition: color 0.3s ease, text-shadow 0.3s ease;
+	transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+div#previousCardWrap:hover, div#nextCardWrap:hover{
+	color:#FFFFFF;
+	text-shadow: 1px 0px 2px #FFFFFF;
+}
+
+x-StateFlag{
+	float:left;
+	padding: 0 0.5em 0 0.5em;
+}
+
+x-StateFlag div{
+	font-size: 100%;
+	width:1em;
+	height:1em;
+	border-radius: 7.5px;
+	background-color: #111111;
+	margin:0.5em;
+	cursor:pointer;
+	-webkit-transition: background-color 0.3s ease, box-shadow 0.3s ease;
+	-moz-transition: background-color 0.3s ease, box-shadow 0.3s ease;
+	transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+x-StateFlag div.selectedStateDiv{
+	background-color: #EEEEEE;
+	box-shadow: 0px 0px 5px #EEEEEE;
+
 }
 
 /*Footer and footer-related styles////////////////////////////////////////////////////*/
