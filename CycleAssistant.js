@@ -149,3 +149,33 @@ function repaint(){
 	else if(onDisplay == 2)
 		generateAfterGraph();
 }
+
+//scrape parameters out of cycle definition table
+function cycleParameterScrape(){
+	var onTime = parseInt(document.getElementById('onTime').value, 10),
+		onUnit = parseInt(selected('selectBeamOnUnit'), 10),
+		offTime = parseInt(document.getElementById('offTime').value, 10),
+		offUnit = parseInt(selected('selectBeamOffUnit'), 10),
+		duration = parseFloat(document.getElementById('expDuration').value),
+		durationUnit = parseInt(selected('selectExpDurationUnit'), 10);
+
+	//beamOn /Off times are all converted to ms, and exp duration to hours.
+	window.cycleParameters = {
+		'beamOn' : onTime * onUnit,
+		'beamOff' : offTime * offUnit,
+		'duration' : duration * durationUnit,
+		'dutyCycle' : onTime / (onTime + offTime)
+	}
+	
+	repaint();
+
+	console.log(window.cycleParameters);
+}
+
+//return the value of a selected option from a <select> element
+function selected(selectID){
+    var select = document.getElementById(selectID),
+        value = select.options[select.selectedIndex].value;
+
+    return value;
+}

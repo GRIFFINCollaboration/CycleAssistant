@@ -49,6 +49,12 @@ table {
 	border-spacing: 0;
 }
 
+select{
+    -webkit-appearance:none;
+    -moz-appearance:none;
+	appearance:none;
+}
+
 /*Enforce more intuitive box-sizing, suppress selection*/
 * { 
 	-moz-box-sizing: border-box; 
@@ -130,6 +136,17 @@ div#cycleDefinition input{
 	color:#EEEEEE;
 	width: 6em;
 	padding:0 0 0 0.5em;
+}
+
+select.unitSelect{
+	font-size: 120%;
+	line-height: 2em;
+	background-color: #111111;
+	border-radius: 5px;
+	border: 0px;
+	color:#EEEEEE;
+	padding:0 0.5em 0 0.5em;
+	cursor:pointer;
 }
 
 td.leadLabel{
@@ -317,6 +334,7 @@ x-StateFlag div{
 	background-color: #111111;
 	margin:0.5em;
 	cursor:pointer;
+	border:2px solid #999999;
 	-webkit-transition: background-color 0.3s ease, box-shadow 0.3s ease;
 	-moz-transition: background-color 0.3s ease, box-shadow 0.3s ease;
 	transition: background-color 0.3s ease, box-shadow 0.3s ease;

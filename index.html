@@ -60,18 +60,35 @@
 					<table>
 						<tr>
 							<td class='leadLabel'>Beam On</td>
-							<td><input id='onTime' type='number' min='0' value='1000'></input></td>
-							<td class='unitLabel'>ms</td>
+							<td><input id='onTime' type='number' min='0' value='1000' onchange='cycleParameterScrape()'></input></td>
+							<td>
+								<select id='selectBeamOnUnit' class='unitSelect' onchange='cycleParameterScrape()'>
+									<option value='1'>ms</option>
+									<option value='1000'>s</option>
+									<option value='60000'>min</option>
+								</select>
+							</td>
 						</tr>
 						<tr>
 							<td class='leadLabel'>Beam Off</td>
-							<td><input id='offTime' type='number' min='0' value='1000'></input></td>
-							<td class='unitLabel'>ms</td>
+							<td><input id='offTime' type='number' min='0' value='1000' onchange='cycleParameterScrape()'></input></td>
+							<td>
+								<select id='selectBeamOffUnit' class='unitSelect' onchange='cycleParameterScrape()'>
+									<option value='1'>ms</option>
+									<option value='1000'>s</option>
+									<option value='60000'>min</option>
+								</select>
+							</td>
 						</tr>
 						<tr>
 							<td class='leadLabel'>Expt. Duration</td>
-							<td><input id='expDuration' type='number' min='0' value='144'></input></td>
-							<td class='unitLabel'>h</td>
+							<td><input id='expDuration' type='number' min='0' value='144' onchange='cycleParameterScrape()'></input></td>
+							<td>
+								<select id='selectExpDurationUnit' class='unitSelect' onchange='cycleParameterScrape()'>
+									<option value='1'>h</option>
+									<option value='24'>days</option>
+								</select>
+							</td>
 						</tr>
 					</table>
 				</div>
@@ -166,22 +183,21 @@
 					'duration' : parseFloat(document.getElementById('expDuration').value),
 					'dutyCycle' : 0.5
 				}
+				/*
 				//plug in cycle parameter table callbacks:
 				document.getElementById('onTime').onchange = function(){
-					window.cycleParameters.beamOn = parseInt(this.value, 10);
-					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
+					cycleParameterScrape();
 					repaint();
 				}
 				document.getElementById('offTime').onchange = function(){
-					window.cycleParameters.beamOff = parseInt(this.value, 10);
-					window.cycleParameters.dutyCycle = window.cycleParameters.beamOn / (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
+					cycleParameterScrape();
 					repaint();
 				}
 				document.getElementById('expDuration').onchange = function(){
-					window.cycleParameters.duration = parseFloat(this.value);
+					cycleParameterScrape();
 					repaint();		
 				}
-
+				*/
 				//set up region selector store and callback:
 				window.region = 'tape';
 				var areaRadio = document.querySelectorAll('div#areaSelect input');
