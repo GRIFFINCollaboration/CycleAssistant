@@ -183,21 +183,7 @@
 					'duration' : parseFloat(document.getElementById('expDuration').value),
 					'dutyCycle' : 0.5
 				}
-				/*
-				//plug in cycle parameter table callbacks:
-				document.getElementById('onTime').onchange = function(){
-					cycleParameterScrape();
-					repaint();
-				}
-				document.getElementById('offTime').onchange = function(){
-					cycleParameterScrape();
-					repaint();
-				}
-				document.getElementById('expDuration').onchange = function(){
-					cycleParameterScrape();
-					repaint();		
-				}
-				*/
+
 				//set up region selector store and callback:
 				window.region = 'tape';
 				var areaRadio = document.querySelectorAll('div#areaSelect input');
@@ -211,6 +197,8 @@
 				//plot something to begin with:
 				tableScrape();
 				repaint();
+
+				activity(0,0,0,0,7999)
 
 			});
 		</script>
