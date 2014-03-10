@@ -29,17 +29,19 @@ function generateDataCSV(state){
 	var data = (state == 'cycle') ? 'Time[s]' : 'Time[h]',
 		nPoints = 800,
 		key, i, nextline,
-		lastActivity = {};
+		lastActivity = {},
+		endOfRunActivity = {};
 
 	//CSV header row:
 	for(key in window.isotopeList){
 		data += ',';
 		data += key;
 		lastActivity[key] = 0; //start activities at 0
+		endOfRunActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*3600000)
 	}
 	if(data == 'Time[h]' || data == 'Time[s]')
 		data += ','; //blank column for page load
-	data += '\n';
+	data += '\n';	
 
 	for(i=0; i<nPoints; i++){
 		//add the x-value to the list:
@@ -63,7 +65,7 @@ function generateDataCSV(state){
 					//nextline += activityDuring(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i/1000);
 					nextline += lastActivity[key];
 				} else if(state == 'after')
-					nextline += activityAfter(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
+					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
 			}
 		}
 		//an empty graph for page load
@@ -138,9 +140,7 @@ function activityDuring(yield, lifetime, time){
 }
 
 //activity as a function of time, after experiment is finished.
-function activityAfter(yield, lifetime, time){
-	var peakActivity = activityDuring(yield, lifetime, window.cycleParameters.duration*3600);
-
+function activityAfter(peakActivity, lifetime, time){
 	return peakActivity * Math.exp(-1*lifetime*time);
 }
 
