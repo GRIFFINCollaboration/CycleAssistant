@@ -149,8 +149,8 @@ function stepActivity(A0, rate, lifetime, time){
 	return rate * (1 - Math.exp(-1*lifetime*time)) + A0 * Math.exp(-1*lifetime*time);
 }
 
-//calculate the activity at time <t>, given a beam-on <rate>, isotope <lifetime>, and that the activity was <A0> at time <t0>, 
-//t and t0 in ms
+//calculate the activity at time <t>[ms], given a beam-on <rate>[counts/s], isotope <lifetime>[s-1], 
+//and that the activity was <A0>[counts/s] at time <t0>[ms], t and t0 in ms
 function activity(t0, A0, rate, lifetime, t){
 	var beamOn, firstPeriodTimeElapsed,
 		propTime,
@@ -159,11 +159,11 @@ function activity(t0, A0, rate, lifetime, t){
 		scaleConstant;
 
 	//scale for each region:
-	if(window.region == 'tape') scaleConstant = 1//0.89;
-	else if(window.region == 'chamber') scaleConstant = 1//0.01;
-	else if(window.region == 'beamline') scaleConstant = 1//0.1;
+	if(window.region == 'tape') scaleConstant = 0.89;
+	else if(window.region == 'chamber') scaleConstant = 0.01;
+	else if(window.region == 'beamline') scaleConstant = 0.1;
 
-	//figure out if beam is on or off at time t0, and how long until the next cycle:
+	//figure out if beam is on or off at time t0, and how long its been in that state:
 	firstPeriodTimeElapsed = t0 % (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
 	if(firstPeriodTimeElapsed < window.cycleParameters.beamOn) beamOn = true; //ie beam is on and has been on for <firstPeriodTimeElapsed>
 	else{
@@ -180,7 +180,7 @@ function activity(t0, A0, rate, lifetime, t){
 	propTime = Math.min(propTime, t-t0);
 	//propagate to the end of this state:
 	if(beamOn)
-		stepA = stepActivity(stepA, rate, lifetime, propTime/1000); //lifetimes recorded in seconds
+		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000); //lifetimes recorded in seconds
 	else
 		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
 	stepTime += propTime;
@@ -192,13 +192,14 @@ function activity(t0, A0, rate, lifetime, t){
 
 		if(beamOn){
 			propTime = window.cycleParameters.beamOn;
-			stepA = stepActivity(stepA, rate, lifetime, propTime/1000);
+			stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
 		}
 		else{
 			propTime = window.cycleParameters.beamOff;
 			stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
 		}
 		stepTime += propTime;
+
 	}
 
 	//we're now less than one cycle away from t.  Attempt to propagate one step:
@@ -211,25 +212,25 @@ function activity(t0, A0, rate, lifetime, t){
 	propTime = Math.min(propTime, t-stepTime);
 	//propagate to the end of this state:
 	if(beamOn)
-		stepA = stepActivity(stepA, rate, lifetime, propTime/1000);
+		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
 	else
 		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
 	stepTime += propTime;	
 
 	//return if we've reached t:
 	if(stepTime == t)
-		return scaleConstant*stepA;
+		return stepA;
 
 	//finish the last step if we didn't just return:
 	beamOn = !beamOn;
 	propTime = t-stepTime;
 	//propagate to the end of this state:
 	if(beamOn)
-		stepA = stepActivity(stepA, rate, lifetime, propTime/1000);
+		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
 	else
 		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
 
-	return scaleConstant*stepA;
+	return stepA;
 
 }
 
