@@ -1,14 +1,14 @@
 <html>
 	<head>
 		<link rel="stylesheet" type="text/css" href="CycleAssistant.css"/>
-		<link rel='stylesheet' type='text/css' href='lib/brick-1.0.0.min.css'>
+		<link rel='stylesheet' type='text/css' href='lib/brick-0.9.1.css'>
 
 		<script type="text/javascript" src="lib/dygraph-combined.js"></script>
 		<script type="text/javascript" src="lib/dygraph-extra.js"></script>
 		<script type="text/javascript" src="branding.js"></script>
 		<script type="text/javascript" src="CycleAssistant.js"></script>
 		<script type="text/javascript" src="cycleAssistantTests.js"></script>
-		<script type='text/javascript' src='lib/brick-1.0.0.min.js'></script>
+		<script type='text/javascript' src='lib/brick-0.9.1.js'></script>
 		<script type="text/javascript" src="lib/xInputTable.js"></script>
 		<script type="text/javascript" src="lib/xStateFlag.js"></script>
 
@@ -27,7 +27,7 @@
 			</div>
 
 			<div id='mainContent'>
-				<x-deck id='plotDeck' selected-index='0' loop='true' transition-type='slide-left'>
+				<x-deck id='plotDeck' selected-index='0'>
 					<x-card id='duringPlotCard'>
 						<div id='duringPlot'></div>
 					</x-card>
@@ -156,18 +156,18 @@
 
 				//plug in x-deck toggles
 				document.getElementById('previousCardWrap').onclick = function(){
-					document.getElementById('plotDeck').previousCard();
+					document.getElementById('plotDeck').shufflePrev();
 					document.getElementById('stateFlag').previousState();
 					repaint();
 				}
 				document.getElementById('nextCardWrap').onclick = function(){
-					document.getElementById('plotDeck').nextCard();
+					document.getElementById('plotDeck').shuffleNext();
 					document.getElementById('stateFlag').nextState();
 					repaint();
 				}
 				//and StateIndex onclick callbacks:
 				document.getElementById('stateFlag').gotoCallback = function(){
-					document.getElementById('plotDeck').showCard(document.getElementById('stateFlag').state);
+					document.getElementById('plotDeck').shuffleTo(document.getElementById('stateFlag').state);
 					repaint();
 				}
 
