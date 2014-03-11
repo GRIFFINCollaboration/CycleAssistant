@@ -1,45 +1,124 @@
+//initial setup
+function setup(){
+
+	//set up branding
+	footerImage('footerImage', 2, '#444444');
+
+	//kern title nicely
+	var headlineWidth = document.getElementById('headline').offsetWidth,
+		sublineWidth  = document.getElementById('subline').offsetWidth,
+		sublineKern   = (headlineWidth - sublineWidth) / 6;
+	document.getElementById('subline').style.letterSpacing = sublineKern;
+
+	//plug isotope table addrow button in
+	document.getElementById('addrow').onclick = function(){
+		document.getElementById('isotopeTable').insertRow()
+	}
+
+	//plug in x-deck toggles
+	document.getElementById('previousCardWrap').onclick = function(){
+		document.getElementById('plotDeck').shufflePrev();
+		document.getElementById('stateFlag').previousState();
+		repaint();
+	}
+	document.getElementById('nextCardWrap').onclick = function(){
+		document.getElementById('plotDeck').shuffleNext();
+		document.getElementById('stateFlag').nextState();
+		repaint();
+	}
+	//and StateIndex onclick callbacks:
+	document.getElementById('stateFlag').gotoCallback = function(){
+		document.getElementById('plotDeck').shuffleTo(document.getElementById('stateFlag').state);
+		repaint();
+	}
+
+	//plug in x-inputTable callback
+	document.getElementById('isotopeTable').changeCallback = function(){
+		tableScrape();
+		repaint();
+	};
+
+	//set up cycle parameter store:
+	window.cycleParameters = {
+		'beamOn' : parseInt(document.getElementById('onTime').value, 10),
+		'beamOff' : parseInt(document.getElementById('offTime').value, 10),
+		'duration' : parseFloat(document.getElementById('expDuration').value),
+		'durationUnit' : 'shifts',
+		'durationConversion' : 12,
+		'dutyCycle' : 0.5
+	}
+
+	//set up region selector store and callback:
+	window.region = 'tape';
+	var areaRadio = document.querySelectorAll('div#areaSelect input');
+	[].forEach.call(areaRadio, function(rad){
+		rad.onchange = function(){
+			window.region = this.value;
+			repaint();
+		}
+	});
+
+	//plot something to begin with:
+	tableScrape();
+	repaint();
+}
+
 //scrape data out of the table, and put it in a convenient object.
 function tableScrape(){
 	window.isotopeList = {},
-		elts;
+		elts,
+		skipRow = true;
 
 	//get names
     var elts = document.querySelectorAll('x-inputTable tr');
     [].forEach.call(elts, function(elt){        
-    	var name = elt.childNodes[0].childNodes[0].value,
-    		halfLife = elt.childNodes[1].childNodes[0].value,
-    		yield = elt.childNodes[2].childNodes[0].value,
-    		visible = elt.childNodes[3].childNodes[0].checked,
-    		tag;
+    	if(!skipRow){
+	    	var name = elt.childNodes[0].childNodes[0].value,
+	    		halfLife = elt.childNodes[1].childNodes[0].value,
+	    		halfLifeUnit = parseInt(selected(elt.childNodes[2].childNodes[0].id)),
+	    		yield = elt.childNodes[3].childNodes[0].value,
+	    		visible = elt.childNodes[4].childNodes[0].checked,
+	    		tag;
 
-    	if(name){
-    		//create object in isotopeList with same key as name, minus whitespace:
-    		tag = name.replace(/ /g,'');
-    		window.isotopeList[tag] = 	{	'name' : name,
-    										'lifetime' : Math.log(2) / halfLife,
-    										'yield' : parseFloat(yield),
-    										'visible' : visible
-    									};
-    	}
+	    	if(name){
+	    		//create object in isotopeList with same key as name, minus whitespace:
+	    		tag = name.replace(/ /g,'');
+	    		window.isotopeList[tag] = 	{	'name' : name,
+	    										'lifetime' : Math.log(2) / halfLife / halfLifeUnit,
+	    										'yield' : parseFloat(yield),
+	    										'visible' : visible
+	    									};
+	    	}
+	    } else 
+	    	skipRow = false;
     });
 }
 
 //create the CSV string for the experiment graph if state == 'during', cycle graph if state == 'cycle', or after if state == 'after'
 function generateDataCSV(state){
-	var data = (state == 'cycle') ? 'Time[s]' : 'Time[h]',
+	var data,
 		nPoints = 800,
 		key, i, nextline,
+		foundAnIsotope = false,
 		lastActivity = {},
 		endOfRunActivity = {};
 
+	if(state == 'cycle') data = 'Time[s]';
+	else if(state == 'during') data = 'Time['+window.cycleParameters.durationUnit+']';
+	else if(state == 'after') data = 'Time[h]';
+
 	//CSV header row:
 	for(key in window.isotopeList){
-		data += ',';
-		data += key;
-		lastActivity[key] = 0; //start activities at 0
-		endOfRunActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*3600000)
+		if(window.isotopeList[key].visible){
+			foundAnIsotope = true;
+			data += ',';
+			data += key;
+			lastActivity[key] = 0; //start activities at 0
+			endOfRunActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000)
+		}
 	}
-	if(data == 'Time[h]' || data == 'Time[s]')
+
+	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
 
@@ -57,12 +136,10 @@ function generateDataCSV(state){
 			if(window.isotopeList[key].visible){
 				nextline += ',';
 				if(state == 'during'){
-					lastActivity[key] = activity(Math.max(0, (window.cycleParameters.duration / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration / nPoints)*i*3600000 )
-					//nextline += activityDuring(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration / nPoints)*i*3600);
+					lastActivity[key] = activity(Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*i*3600000 )
 					nextline += lastActivity[key];
 				} else if(state == 'cycle'){
 					lastActivity[key] = activity(Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i )
-					//nextline += activityDuring(window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i/1000);
 					nextline += lastActivity[key];
 				} else if(state == 'after')
 					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
@@ -83,7 +160,7 @@ function generateDataCSV(state){
 function generateDuringGraph(state){
 	window.duringPlot = new Dygraph(document.getElementById(state+'Plot'), generateDataCSV(state), {
 		title: (state=='during') ? 'Activity During Experiment' : 'Activity Over Three Cycles',
-		xlabel: (state=='during') ? 'Time [h]' : 'Time [s]',
+		xlabel: (state=='during') ? 'Time ['+window.cycleParameters.durationUnit+']' : 'Time [s]',
 		ylabel: 'Activity [counts/s]',
 		sigFigs: 2,
 		strokeWidth: 4,
@@ -96,7 +173,11 @@ function generateDuringGraph(state){
 		axes:{
 			x: {
 				valueFormatter: function(number, opts, dygraph){
-						return number.toFixed((state=='during') ? 0 : 2) + ((state=='during') ? ' hours' : ' seconds');
+						var units;
+						if(state == 'during') units = ' '+window.cycleParameters.durationUnit
+						else if(state == 'cycle') units = ' seconds'
+						else if(state == 'after') units = ' hours'
+						return number.toFixed((state=='during') ? 0 : 2) + units;
 				},
 			}
 		}
@@ -125,18 +206,6 @@ function generateAfterGraph(){
 			}
 		}
 	});
-}
-
-//activity as a function of time, while contamination is accruing.
-function activityDuring(yield, lifetime, time){
-	var scaleConstant;
-
-	//scale for each region:
-	if(window.region == 'tape') scaleConstant = 0.89;
-	else if(window.region == 'chamber') scaleConstant = 0.01;
-	else if(window.region == 'beamline') scaleConstant = 0.1;
-
-	return window.cycleParameters.dutyCycle * scaleConstant * yield * (1 - Math.exp(-1*lifetime*time));
 }
 
 //activity as a function of time, after experiment is finished.
@@ -259,10 +328,11 @@ function cycleParameterScrape(){
 	window.cycleParameters = {
 		'beamOn' : onTime * onUnit,
 		'beamOff' : offTime * offUnit,
-		'duration' : duration * durationUnit,
+		'duration' : duration,
+		'durationUnit' : (durationUnit == 1) ? 'h' : ((durationUnit == 12) ? 'shifts' : 'days'),
+		'durationConversion' : durationUnit,
 		'dutyCycle' : onTime / (onTime + offTime)
 	}
-
 	repaint();
 }
 

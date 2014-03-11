@@ -55,6 +55,11 @@ select{
 	appearance:none;
 }
 
+input:invalid{
+	color: #FF0000 !important;
+	border: 2px solid #FF0000 !important;
+}
+
 /*Enforce more intuitive box-sizing, suppress selection*/
 * { 
 	-moz-box-sizing: border-box; 
@@ -162,7 +167,7 @@ td.unitLabel{
 /*///////////////////*/
 /*isotope list styles*/
 /*///////////////////*/
-div#isotopeList input{
+div#isotopeList input, div#isotopeList select{
 	font-size: 120%;
 	line-height: 2em;
 	background-color: #111111;
@@ -174,9 +179,14 @@ div#isotopeList input{
 	margin-right: 2px;
 }
 
+div#isotopeList select{
+	width: 100%;
+	text-align: center;
+	padding: 0 1em 0 1em;
+}
+
 td.deleteRow{
 	padding-left: 1em;
-	text-align: center;
 }
 
 input[type=checkbox]{
@@ -203,8 +213,12 @@ input[type='checkbox']:checked + label{
 	background-color: #00FF00;
 }
 
-x-inputTable tr td:nth-child(4){
+x-inputTable tr td:nth-child(5){
 	text-align: center;
+}
+
+x-inputTable tr td:nth-child(4){
+	padding-left: 1em;
 }
 
 button{

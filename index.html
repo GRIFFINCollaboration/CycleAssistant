@@ -83,11 +83,12 @@
 						</tr>
 						<tr>
 							<td class='leadLabel'>Expt. Duration</td>
-							<td><input id='expDuration' type='number' min='0' value='144' onchange='cycleParameterScrape()'></input></td>
+							<td><input id='expDuration' type='number' min='0' value='12' onchange='cycleParameterScrape()'></input></td>
 							<td>
 								<select id='selectExpDurationUnit' class='unitSelect' onchange='cycleParameterScrape()'>
 									<option value='1'>h</option>
 									<option value='24'>days</option>
+									<option value='12' selected>shifts</option>
 								</select>
 							</td>
 						</tr>
@@ -96,7 +97,7 @@
 
 				<div id='isotopeList'>
 					<h2>Isotope List</h2>
-					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life (s),Yield/s,Hide/Show' types='text,number,number,checkbox' values=',1,0'></x-InputTable>
+					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life,Half-Life [unit],Yield/s,Hide/Show' types='text,number,select,number,checkbox' values=',1,,0', selectOptions='s,min,hours,days,years' selectValues='1,60,3600,86400,31557600', minima=',0,,0'></x-InputTable>
 					<button id='addrow'>New Isotope</button>
 				</div>
 			</div>
@@ -140,65 +141,7 @@
 
 		<script>
 			document.addEventListener('DOMComponentsLoaded', function(){
-				//set up branding
-				footerImage('footerImage', 2, '#444444');
-
-				//kern title nicely
-				var headlineWidth = document.getElementById('headline').offsetWidth,
-					sublineWidth  = document.getElementById('subline').offsetWidth,
-					sublineKern   = (headlineWidth - sublineWidth) / 6;
-				document.getElementById('subline').style.letterSpacing = sublineKern;
-
-				//plug isotope table addrow button in
-				document.getElementById('addrow').onclick = function(){
-					document.getElementById('isotopeTable').insertRow()
-				}
-
-				//plug in x-deck toggles
-				document.getElementById('previousCardWrap').onclick = function(){
-					document.getElementById('plotDeck').shufflePrev();
-					document.getElementById('stateFlag').previousState();
-					repaint();
-				}
-				document.getElementById('nextCardWrap').onclick = function(){
-					document.getElementById('plotDeck').shuffleNext();
-					document.getElementById('stateFlag').nextState();
-					repaint();
-				}
-				//and StateIndex onclick callbacks:
-				document.getElementById('stateFlag').gotoCallback = function(){
-					document.getElementById('plotDeck').shuffleTo(document.getElementById('stateFlag').state);
-					repaint();
-				}
-
-				//plug in x-inputTable callback
-				document.getElementById('isotopeTable').changeCallback = function(){
-					tableScrape();
-					repaint();
-				};
-
-				//set up cycle parameter store:
-				window.cycleParameters = {
-					'beamOn' : parseInt(document.getElementById('onTime').value, 10),
-					'beamOff' : parseInt(document.getElementById('offTime').value, 10),
-					'duration' : parseFloat(document.getElementById('expDuration').value),
-					'dutyCycle' : 0.5
-				}
-
-				//set up region selector store and callback:
-				window.region = 'tape';
-				var areaRadio = document.querySelectorAll('div#areaSelect input');
-				[].forEach.call(areaRadio, function(rad){
-					rad.onchange = function(){
-						window.region = this.value;
-						repaint();
-					}
-				});
-
-				//plot something to begin with:
-				tableScrape();
-				repaint();
-
+				setup();
 
 				//testing
 				//verbose = true;
