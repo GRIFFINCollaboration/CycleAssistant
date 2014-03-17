@@ -254,7 +254,7 @@ x-deck#plotDeck{
 	margin-bottom: 1em;
 }
 
-div#duringPlot, div#afterPlot, div#cyclePlot{
+div#duringPlot, div#afterPlot, div#cyclePlot, div#lastCyclesPlot{
 	width: 100% !important;
 	height: 100% !important;
 }

@@ -42,6 +42,9 @@ function setup(){
 	window.cycleParameters = {
 		'beamOn' : parseInt(document.getElementById('onTime').value, 10),
 		'beamOff' : parseInt(document.getElementById('offTime').value, 10),
+		'cycleUnit' : parseInt(selected('selectBeamOffUnit'), 10),
+		'cycleConversion' : parseInt(selected('selectBeamOffUnit'), 10),
+		'cycleUnit' : ((parseInt(selected('selectBeamOffUnit'), 10)==1)? 'ms' : ((parseInt(selected('selectBeamOffUnit'), 10)=='1000')? 's':'min') ),
 		'duration' : parseFloat(document.getElementById('expDuration').value),
 		'durationUnit' : 'shifts',
 		'durationConversion' : 12,
@@ -94,16 +97,17 @@ function tableScrape(){
     });
 }
 
-//create the CSV string for the experiment graph if state == 'during', cycle graph if state == 'cycle', or after if state == 'after'
+//create the CSV string for the experiment graph if state == 'during', first 3 cycles graph if state == 'cycle',  
+//last 3 cycles if state =='lastCycles' or after if state == 'after'
 function generateDataCSV(state){
-	var data,
+	var data, time,
 		nPoints = 800,
 		key, i, nextline,
 		foundAnIsotope = false,
 		lastActivity = {},
 		endOfRunActivity = {};
 
-	if(state == 'cycle') data = 'Time[s]';
+	if(state == 'cycle' || state == 'lastCycles') data = 'Time['+window.cycleParameters.cycleUnit+']';
 	else if(state == 'during') data = 'Time['+window.cycleParameters.durationUnit+']';
 	else if(state == 'after') data = 'Time[h]';
 
@@ -113,7 +117,8 @@ function generateDataCSV(state){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
-			lastActivity[key] = 0; //start activities at 0
+			lastActivity[key] = 0; //start activities at 0, unless plotting last three cycles:
+			if(state == 'lastCycles') lastActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - (window.cycleParameters.beamOn+window.cycleParameters.beamOff)*3 )
 			endOfRunActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000)
 		}
 	}
@@ -127,8 +132,13 @@ function generateDataCSV(state){
 		if(state == 'during')
 			data += (window.cycleParameters.duration / nPoints)*i;
 		else if(state == 'cycle')
-			data += (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints/1000)*i
-		else if (state == 'after')
+			data += (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints/window.cycleParameters.cycleConversion)*i
+		else if(state == 'lastCycles'){
+			//time in ms
+			time = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) + (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i
+			//append time in whatever units selected to x-data series.
+			data += time/window.cycleParameters.cycleConversion;
+		} else if (state == 'after')
 			data += (1000 / nPoints)*i;
 		//add a y-value for each isotope:
 		nextline = '';
@@ -141,6 +151,9 @@ function generateDataCSV(state){
 				} else if(state == 'cycle'){
 					lastActivity[key] = activity(Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i )
 					nextline += lastActivity[key];
+				} else if(state == 'lastCycles'){
+					lastActivity[key] = activity(Math.max(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff), time - (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time);
+					nextline += lastActivity[key]
 				} else if(state == 'after')
 					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
 			}
@@ -156,11 +169,11 @@ function generateDataCSV(state){
 	return data;
 }
 
-//generate the dygraph for the <state>, either 'during' or 'cycle':
+//generate the dygraph for the <state>, either 'during' or 'cycle' or 'lastCycles':
 function generateDuringGraph(state){
 	window.duringPlot = new Dygraph(document.getElementById(state+'Plot'), generateDataCSV(state), {
-		title: (state=='during') ? 'Activity During Experiment' : 'Activity Over Three Cycles',
-		xlabel: (state=='during') ? 'Time ['+window.cycleParameters.durationUnit+']' : 'Time [s]',
+		title: (state=='during') ? 'Activity During Experiment' : ((state=='cycle') ? 'Activity Over First Three Cycles' : 'Activity Over Last Three Cycles'),
+		xlabel: (state=='during') ? 'Time ['+window.cycleParameters.durationUnit+']' : 'Time ['+window.cycleParameters.cycleUnit+']',
 		ylabel: 'Activity [counts/s]',
 		sigFigs: 2,
 		strokeWidth: 4,
@@ -174,11 +187,11 @@ function generateDuringGraph(state){
 			x: {
 				valueFormatter: function(number, opts, dygraph){
 						var units;
-						if(state == 'during') units = ' '+window.cycleParameters.durationUnit
-						else if(state == 'cycle') units = ' seconds'
-						else if(state == 'after') units = ' hours'
+						if(state == 'during') units = ' '+window.cycleParameters.durationUnit;
+						else if(state == 'cycle' || state == 'lastCycles') units = ' '+window.cycleParameters.cycleUnit;
+						//else if(state == 'after') units = ' hours'
 						return number.toFixed((state=='during') ? 0 : 2) + units;
-				},
+				}
 			}
 		}
 	});
@@ -203,6 +216,7 @@ function generateAfterGraph(){
 				valueFormatter: function(number, opts, dygraph){
 						return number.toFixed() + ' hours';
 				},
+				sigFigs: 2
 			}
 		}
 	});
@@ -312,6 +326,8 @@ function repaint(){
 	else if(onDisplay == 1)
 		generateDuringGraph('cycle');
 	else if(onDisplay == 2)
+		generateDuringGraph('lastCycles');
+	else if(onDisplay == 3)
 		generateAfterGraph();
 }
 
@@ -328,6 +344,8 @@ function cycleParameterScrape(){
 	window.cycleParameters = {
 		'beamOn' : onTime * onUnit,
 		'beamOff' : offTime * offUnit,
+		'cycleConversion' : offUnit,
+		'cycleUnit' : ((offUnit==1)? 'ms' : ((offUnit=='1000')? 's':'min') ),
 		'duration' : duration,
 		'durationUnit' : (durationUnit == 1) ? 'h' : ((durationUnit == 12) ? 'shifts' : 'days'),
 		'durationConversion' : durationUnit,

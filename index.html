@@ -36,6 +36,10 @@
 						<div id='cyclePlot'></div>
 					</x-card>
 
+					<x-card id='cyclePlotCard'>
+						<div id='lastCyclesPlot'></div>
+					</x-card>
+
 					<x-card id='afterPlotCard'>
 						<div id='afterPlot'></div>
 					</x-card>
@@ -43,13 +47,13 @@
 
 				<div id='navWrap'>
 					<div id='previousCardWrap'>&#10218</div>
-					<x-StateFlag id='stateFlag' nStates='3'></x-StateFlag>
+					<x-StateFlag id='stateFlag' nStates='4'></x-StateFlag>
 					<div id='nextCardWrap'>&#10219</div>
 				</div>
 
 				<div id='areaSelect'>
 					<input type='radio' name='area' id='tape' value='tape' checked='true'></input>
-					<label id='tapeLabel' for='tape'>On the Tape</label>
+					<label id='tapeLabel' for='tape'>In the Tape Box</label>
 					<input type='radio' name='area' id='chamber' value='chamber'></input>
 					<label id='chamberLabel' for='chamber'>In the Chamber</label>
 					<input type='radio' name='area' id='beamline' value='beamline'></input>
@@ -61,7 +65,7 @@
 					<table>
 						<tr>
 							<td class='leadLabel'>Beam On</td>
-							<td><input id='onTime' type='number' min='0' value='1000' onchange='cycleParameterScrape()'></input></td>
+							<td><input id='onTime' type='number' min='0' value='1000' step='any' onchange='cycleParameterScrape()'></input></td>
 							<td>
 								<select id='selectBeamOnUnit' class='unitSelect' onchange='cycleParameterScrape()'>
 									<option value='1'>ms</option>
@@ -72,7 +76,7 @@
 						</tr>
 						<tr>
 							<td class='leadLabel'>Beam Off</td>
-							<td><input id='offTime' type='number' min='0' value='1000' onchange='cycleParameterScrape()'></input></td>
+							<td><input id='offTime' type='number' min='0' value='1000' step='any' onchange='cycleParameterScrape()'></input></td>
 							<td>
 								<select id='selectBeamOffUnit' class='unitSelect' onchange='cycleParameterScrape()'>
 									<option value='1'>ms</option>
@@ -83,7 +87,7 @@
 						</tr>
 						<tr>
 							<td class='leadLabel'>Expt. Duration</td>
-							<td><input id='expDuration' type='number' min='0' value='12' onchange='cycleParameterScrape()'></input></td>
+							<td><input id='expDuration' type='number' min='0' value='12' step='any' onchange='cycleParameterScrape()'></input></td>
 							<td>
 								<select id='selectExpDurationUnit' class='unitSelect' onchange='cycleParameterScrape()'>
 									<option value='1'>h</option>
