@@ -105,7 +105,9 @@ function generateDataCSV(state){
 		key, i, nextline,
 		foundAnIsotope = false,
 		lastActivity = {},
-		endOfRunActivity = {};
+		endOfRunActivity = {},
+		propTime, 
+		tempTerm = 0;
 
 	if(state == 'cycle' || state == 'lastCycles') data = 'Time['+window.cycleParameters.cycleUnit+']';
 	else if(state == 'during') data = 'Time['+window.cycleParameters.durationUnit+']';
@@ -129,11 +131,13 @@ function generateDataCSV(state){
 
 	for(i=0; i<nPoints; i++){
 		//add the x-value to the list:
-		if(state == 'during')
+		if(state == 'during'){
+			time = (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints*3600000)*i;
 			data += (window.cycleParameters.duration / nPoints)*i;
-		else if(state == 'cycle')
-			data += (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints/window.cycleParameters.cycleConversion)*i
-		else if(state == 'lastCycles'){
+		} else if(state == 'cycle'){
+			time = (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i;
+			data += time/window.cycleParameters.cycleConversion;
+		} else if(state == 'lastCycles'){
 			//time in ms
 			time = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) + (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i
 			//append time in whatever units selected to x-data series.
@@ -144,16 +148,34 @@ function generateDataCSV(state){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
+
+				//the chamber sees not only the 1% activity that backscatters into it,
+				//but some extra activity from the 89% that is deposited on the tape in the
+				//beamspot; this extra term is independent of cycle number though, since
+				//the activity that builds up there is reset to 0 when the tape is cycled into the 
+				//tape box between beam off -> beam on.  Thus we can just caluclate it as a 
+				//simple correction to be tacked on at the end, that doesn't depend on where in the
+				//experiment we are.
+				if(window.region == 'chamber' && state!='after'){
+					propTime = time % (window.cycleParameters.beamOn + window.cycleParameters.beamOff) //time into this cycle
+					if (propTime < window.cycleParameters.beamOn) //still in irradiation step:
+						tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, propTime/1000);
+					else{ //completed irradiation step, now in decay step
+						tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.beamOn/1000);
+						tempTerm = stepActivity(tempTerm, 0, window.isotopeList[key].lifetime, (propTime - window.cycleParameters.beamOn)/1000);
+					}
+				}
+
 				nextline += ',';
 				if(state == 'during'){
-					lastActivity[key] = activity(Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*i*3600000 )
-					nextline += lastActivity[key];
+					lastActivity[key] = activity(Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
+					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'cycle'){
-					lastActivity[key] = activity(Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*i )
-					nextline += lastActivity[key];
+					lastActivity[key] = activity(Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time );
+					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'lastCycles'){
 					lastActivity[key] = activity(Math.max(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff), time - (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time);
-					nextline += lastActivity[key]
+					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'after')
 					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
 			}
@@ -239,7 +261,8 @@ function activity(t0, A0, rate, lifetime, t){
 		propTime,
 		stepTime = t0,
 		stepA = A0,
-		scaleConstant;
+		scaleConstant, 
+		tempTerm = 0;
 
 	//scale for each region:
 	if(window.region == 'tape') scaleConstant = 0.89;
@@ -302,7 +325,7 @@ function activity(t0, A0, rate, lifetime, t){
 
 	//return if we've reached t:
 	if(stepTime == t)
-		return stepA;
+		return stepA + tempTerm;
 
 	//finish the last step if we didn't just return:
 	beamOn = !beamOn;
@@ -313,7 +336,7 @@ function activity(t0, A0, rate, lifetime, t){
 	else
 		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
 
-	return stepA;
+	return stepA + tempTerm;
 
 }
 
