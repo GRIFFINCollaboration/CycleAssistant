@@ -107,22 +107,74 @@ function generateDataCSV(state){
 		lastActivity = {},
 		endOfRunActivity = {},
 		propTime, 
-		tempTerm = 0;
+		tempTerm = 0,
+		table = document.getElementById('summaryActivity'),
+		row, isotope, chamberRes, tapeRes, tapeResLater,
+		postChamber, postTape, postTapeLater;
+
+	//clear table
+	table.innerHTML = '';
+	//generate table header
+	row = document.createElement('tr');
+	row.setAttribute('id', 'titleRow');
+	table.appendChild(row);
+
+	isotope = document.createElement('td');
+	isotope.setAttribute('id', 'titleIsotope');
+	document.getElementById('titleRow').appendChild(isotope);
+	document.getElementById('titleIsotope').innerHTML = 'Isotope';
+
+	chamberRes = document.createElement('td');
+	chamberRes.setAttribute('id', 'titleChamberRes');
+	document.getElementById('titleRow').appendChild(chamberRes);
+	document.getElementById('titleChamberRes').innerHTML = 'Chamber - Post Expt.';
+
+	tapeRes = document.createElement('td');
+	tapeRes.setAttribute('id', 'titleTapeRes');
+	document.getElementById('titleRow').appendChild(tapeRes);
+	document.getElementById('titleTapeRes').innerHTML = 'Tape Box - Post Expt.';
+
+	tapeResLater = document.createElement('td');
+	tapeResLater.setAttribute('id', 'titleTapeResLater');
+	document.getElementById('titleRow').appendChild(tapeResLater);
+	document.getElementById('titleTapeResLater').innerHTML = 'Tape Box - 12h Later'
 
 	if(state == 'cycle' || state == 'lastCycles') data = 'Time['+window.cycleParameters.cycleUnit+']';
 	else if(state == 'during') data = 'Time['+window.cycleParameters.durationUnit+']';
 	else if(state == 'after') data = 'Time[h]';
 
-	//CSV header row:
+	//CSV header row and empty summary table cells:
 	for(key in window.isotopeList){
 		if(window.isotopeList[key].visible){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
 			lastActivity[key] = 0; //start activities at 0, unless plotting last three cycles:
-			if(state == 'lastCycles') lastActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - (window.cycleParameters.beamOn+window.cycleParameters.beamOff)*3 )
-			endOfRunActivity[key] = activity(0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000)
+			if(state == 'lastCycles') lastActivity[key] = activity(window.region, 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - (window.cycleParameters.beamOn+window.cycleParameters.beamOff)*3 )
+			endOfRunActivity[key] = activity(window.region, 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000)
 		}
+
+		row = document.createElement('tr');
+		row.setAttribute('id', key+'row');
+		table.appendChild(row);
+
+		isotope = document.createElement('td');
+		isotope.setAttribute('id', key+'Isotope');
+		document.getElementById(key+'row').appendChild(isotope);
+		document.getElementById(key+'Isotope').innerHTML = key;
+
+		chamberRes = document.createElement('td');
+		chamberRes.setAttribute('id', key+'ChamberRes');
+		document.getElementById(key+'row').appendChild(chamberRes);
+
+		tapeRes = document.createElement('td');
+		tapeRes.setAttribute('id', key+'TapeRes');
+		document.getElementById(key+'row').appendChild(tapeRes);
+
+		tapeResLater = document.createElement('td');
+		tapeResLater.setAttribute('id', key+'TapeResLater');
+		document.getElementById(key+'row').appendChild(tapeResLater);
+
 	}
 
 	if(!foundAnIsotope)
@@ -168,13 +220,13 @@ function generateDataCSV(state){
 
 				nextline += ',';
 				if(state == 'during'){
-					lastActivity[key] = activity(Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
+					lastActivity[key] = activity(window.region, Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
 					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'cycle'){
-					lastActivity[key] = activity(Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time );
+					lastActivity[key] = activity(window.region, Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time );
 					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'lastCycles'){
-					lastActivity[key] = activity(Math.max(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff), time - (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time);
+					lastActivity[key] = activity(window.region, Math.max(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff), time - (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time);
 					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'after')
 					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
@@ -188,7 +240,32 @@ function generateDataCSV(state){
 		data += nextline + '\n';
 	}
 
+	//populate summary table with final entries in lastActivity
+	for(key in window.isotopeList){
+		postChamber = activity('chamber', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		postTape = activity('tape', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		postTapeLater = activity('tape', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
+		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
+		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
+		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
+	}
+
 	return data;
+}
+
+//return an activity in Bq, with a reasonable SI prefix:
+function printBQ(activity){
+	if(activity > 1000000) return (activity/1000000).toFixed(3) + ' MBq'
+	else if(activity > 1000) return (activity/1000).toFixed(3) + ' kBq'
+	else return (activity).toFixed(3) + ' Bq'
+}
+
+//return an activity in Ci, with a reasonable SI prefix:
+function printCi(activity){
+	var ci = activity / 3.7e+10;
+	if(ci > 1e-3) return (ci*1000).toFixed(3) + ' mCi'
+	else if(ci > 1e-6) return (ci*1000000).toFixed(3) + ' uCi'
+	else return (ci*1000000000).toFixed(3) + ' nCi'
 }
 
 //generate the dygraph for the <state>, either 'during' or 'cycle' or 'lastCycles':
@@ -256,7 +333,7 @@ function stepActivity(A0, rate, lifetime, time){
 
 //calculate the activity at time <t>[ms], given a beam-on <rate>[counts/s], isotope <lifetime>[s-1], 
 //and that the activity was <A0>[counts/s] at time <t0>[ms], t and t0 in ms
-function activity(t0, A0, rate, lifetime, t){
+function activity(region, t0, A0, rate, lifetime, t){
 	var beamOn, firstPeriodTimeElapsed,
 		propTime,
 		stepTime = t0,
@@ -265,9 +342,9 @@ function activity(t0, A0, rate, lifetime, t){
 		tempTerm = 0;
 
 	//scale for each region:
-	if(window.region == 'tape') scaleConstant = 0.89;
-	else if(window.region == 'chamber') scaleConstant = 0.01;
-	else if(window.region == 'beamline') scaleConstant = 0.1;
+	if(region == 'tape') scaleConstant = 0.89;
+	else if(region == 'chamber') scaleConstant = 0.01;
+	else if(region == 'beamline') scaleConstant = 0.1;
 
 	//figure out if beam is on or off at time t0, and how long its been in that state:
 	firstPeriodTimeElapsed = t0 % (window.cycleParameters.beamOn + window.cycleParameters.beamOff);

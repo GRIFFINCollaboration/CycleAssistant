@@ -116,7 +116,7 @@ div#mainContent{
 /*/////////////////*/
 /*Cycle defn styles*/
 /*/////////////////*/
-div#cycleDefinition, div#isotopeList{
+div#cycleDefinition, div#isotopeList, div#summaryTable{
 	background-color: #333333;
 	border-radius:1em;
 	padding:1em;
@@ -125,7 +125,7 @@ div#cycleDefinition, div#isotopeList{
 	margin-right: 1em;
 }
 
-div#cycleDefinition h2, div#isotopeList h2{
+div#cycleDefinition h2, div#isotopeList h2, div#summaryTable h2{
 	margin:0px 0px 1em 0px;
 }
 
@@ -242,6 +242,21 @@ button.deleteRow{
 
 button.deleteRow:hover{
 	color: #FF0000;
+}
+
+/*/////////////*/
+/*activity list*/
+/*/////////////*/
+div#summaryTable{
+	margin-top: 1em;
+}
+
+table#summaryActivity td{
+	padding: 1em;
+}
+
+table#summaryActivity tr:nth-child(odd){
+	background-color: #222222;
 }
 
 /*////////////////*/

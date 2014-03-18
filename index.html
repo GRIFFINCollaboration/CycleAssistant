@@ -104,6 +104,11 @@
 					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life,Half-Life [unit],Yield/s,Hide/Show' types='text,number,select,number,checkbox' values=',1,,0', selectOptions='s,min,hours,days,years' selectValues='1,60,3600,86400,31557600', minima=',0,,0'></x-InputTable>
 					<button id='addrow'>New Isotope</button>
 				</div>
+
+				<div id='summaryTable'>
+					<h2>Activity Summary</h2>
+					<table id='summaryActivity'></table>
+				</div>
 			</div>
 
 			<div id='push'></div>
