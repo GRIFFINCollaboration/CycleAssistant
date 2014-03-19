@@ -179,6 +179,10 @@ div#isotopeList input, div#isotopeList select{
 	margin-right: 2px;
 }
 
+div#isotopeList input::-moz-focus-inner{
+	padding: 0.5em 0 0.5em 0.5em;
+}
+
 div#isotopeList select{
 	width: 100%;
 	text-align: center;
@@ -242,6 +246,10 @@ button.deleteRow{
 
 button.deleteRow:hover{
 	color: #FF0000;
+}
+
+button#addrow{
+	display: block;
 }
 
 /*/////////////*/
