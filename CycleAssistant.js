@@ -110,7 +110,19 @@ function generateDataCSV(state){
 		tempTerm = 0,
 		table = document.getElementById('summaryActivity'),
 		row, isotope, chamberRes, tapeRes, tapeResLater,
-		postChamber, postTape, postTapeLater;
+		postChamber, postTape, postTapeLater,
+		N, nStep;
+
+	//when plotting activity for the full experiment duration, aliasing can become a problem when cycle times are short
+	//compared to experiment duration and half lives are comparable to the cycle time.  It's not feasible to sufficiently
+	//sample this periodic behavior over the whole experiment, so in this case we plot peak activity, which is monotonically
+	//increasing and not periodic.  This can be achieved without special infrastructure just from a judicious choice of nPoints,
+	//rather than the static value it is initialized to above:
+	if(state == 'during'){
+		N = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 / (window.cycleParameters.beamOn + window.cycleParameters.beamOff); //number of cycles in experiment
+		nStep = Math.ceil(N/1000); //how many cycles to skip between samples so we get about 1000 samples spread evenly over the experiment
+		nPoints = Math.ceil((window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - window.cycleParameters.beamOn) / (window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nStep );
+	}
 
 	//clear table
 	table.innerHTML = '';
@@ -184,8 +196,10 @@ function generateDataCSV(state){
 	for(i=0; i<nPoints; i++){
 		//add the x-value to the list:
 		if(state == 'during'){
-			time = (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints*3600000)*i;
-			data += (window.cycleParameters.duration / nPoints)*i;
+			time = window.cycleParameters.beamOn + (window.cycleParameters.beamOn + window.cycleParameters.beamOff)*nStep*i;
+			data += time / 3600000 / window.cycleParameters.durationConversion;
+			//time = (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints*3600000)*i;
+			//data += (window.cycleParameters.duration / nPoints)*i;
 		} else if(state == 'cycle'){
 			time = (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i;
 			data += time/window.cycleParameters.cycleConversion;
@@ -220,7 +234,8 @@ function generateDataCSV(state){
 
 				nextline += ',';
 				if(state == 'during'){
-					lastActivity[key] = activity(window.region, Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
+					lastActivity[key] = activity(window.region, Math.max(0, window.cycleParameters.beamOn + (window.cycleParameters.beamOn + window.cycleParameters.beamOff)*nStep*(i-1)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
+					//lastActivity[key] = activity(window.region, Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
 					nextline += (lastActivity[key]+tempTerm);
 				} else if(state == 'cycle'){
 					lastActivity[key] = activity(window.region, Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time );
@@ -271,7 +286,7 @@ function printCi(activity){
 //generate the dygraph for the <state>, either 'during' or 'cycle' or 'lastCycles':
 function generateDuringGraph(state){
 	window.duringPlot = new Dygraph(document.getElementById(state+'Plot'), generateDataCSV(state), {
-		title: (state=='during') ? 'Activity During Experiment' : ((state=='cycle') ? 'Activity Over First Three Cycles' : 'Activity Over Last Three Cycles'),
+		title: (state=='during') ? 'Peak Activity During Experiment' : ((state=='cycle') ? 'Activity Over First Three Cycles' : 'Activity Over Last Three Cycles'),
 		xlabel: (state=='during') ? 'Time ['+window.cycleParameters.durationUnit+']' : 'Time ['+window.cycleParameters.cycleUnit+']',
 		ylabel: 'Activity [counts/s]',
 		sigFigs: 2,
