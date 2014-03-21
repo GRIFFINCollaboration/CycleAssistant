@@ -298,7 +298,6 @@ div#duringPlot, div#afterPlot, div#cyclePlot, div#lastCyclesPlot{
 }
 
 .dygraph-legend span{
-	float:left;
 	clear:both;
 }
 

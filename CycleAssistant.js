@@ -97,31 +97,262 @@ function tableScrape(){
     });
 }
 
-//create the CSV string for the experiment graph if state == 'during', first 3 cycles graph if state == 'cycle',  
-//last 3 cycles if state =='lastCycles' or after if state == 'after'
-function generateDataCSV(state){
+//return an activity in Bq, with a reasonable SI prefix:
+function printBQ(activity){
+	if(activity > 1000000) return (activity/1000000).toFixed(3) + ' MBq'
+	else if(activity > 1000) return (activity/1000).toFixed(3) + ' kBq'
+	else return (activity).toFixed(3) + ' Bq'
+}
+
+//return an activity in Ci, with a reasonable SI prefix:
+function printCi(activity){
+	var ci = activity / 3.7e+10;
+	if(ci > 1e-3) return (ci*1000).toFixed(3) + ' mCi'
+	else if(ci > 1e-6) return (ci*1000000).toFixed(3) + ' uCi'
+	else return (ci*1000000000).toFixed(3) + ' nCi'
+}
+
+//create the CSV string for the full experiment duration
+function generateFullProfileCSV(){
 	var data, time,
-		nPoints = 800,
-		key, i, nextline,
+		key, i, nextline, nTransitions,
 		foundAnIsotope = false,
-		lastActivity = {},
-		endOfRunActivity = {},
 		propTime, 
-		tempTerm = 0,
-		table = document.getElementById('summaryActivity'),
-		row, isotope, chamberRes, tapeRes, tapeResLater,
-		postChamber, postTape, postTapeLater,
-		N, nStep;
+		nStep;
 
 	//when plotting activity for the full experiment duration, aliasing can become a problem when cycle times are short
 	//compared to experiment duration and half lives are comparable to the cycle time.  It's not feasible to sufficiently
 	//sample this periodic behavior over the whole experiment, so in this case we plot peak activity, which is monotonically
-	//increasing and not periodic.  This can be achieved without special infrastructure just from a judicious choice of nPoints,
-	//rather than the static value it is initialized to above:
-	if(state == 'during'){
-		N = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 / (window.cycleParameters.beamOn + window.cycleParameters.beamOff); //number of cycles in experiment
-		nStep = Math.ceil(N/1000); //how many cycles to skip between samples so we get about 1000 samples spread evenly over the experiment
-		nPoints = Math.ceil((window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - window.cycleParameters.beamOn) / (window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nStep );
+	//increasing and not periodic.  This can be achieved by invoking activitySteps, and considering a sample of the odd indexed
+	//values, which correspond to activities at the moment beamOn transitions to beamOff.
+	
+	data = 'Time['+window.cycleParameters.durationUnit+']';
+
+	//CSV header row:
+	for(key in window.isotopeList){
+		if(window.isotopeList[key].visible){
+			foundAnIsotope = true;
+			data += ',';
+			data += key;
+			nTransitions = window.transitionActivities[key].length //all the same across keys, doesn't matter which one we use
+		}
+	}
+
+	//decide how many points to sample - shoot for about 1000 maxima spread over the experiment
+	nStep = Math.floor(nTransitions / 2); // == how many maxima
+	nStep = Math.floor(nStep/1000); //skip this many maxima between points to cover the experiment in about 1000 points.
+	nPoints = Math.floor(nTransitions / 2 / nStep);
+
+	if(!foundAnIsotope)
+		data += ','; //blank column for page load
+	data += '\n';	
+
+	for(i=0; i<nPoints; i++){
+		//add the x-value to the list:
+		time = window.cycleParameters.beamOn + i*nStep*(window.cycleParameters.beamOn + window.cycleParameters.beamOff);
+		data += time / 3600000 / window.cycleParameters.durationConversion;
+
+		//add a y-value for each isotope:
+		nextline = '';
+		for(key in window.isotopeList){
+			if(window.isotopeList[key].visible){
+				nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));				
+			}
+		}
+		data += nextline + '\n';
+	}
+
+	//an empty graph for page load
+	if(!nPoints){
+		data += '0,0\n1,0';
+	}
+
+	return data;
+}
+
+//create the CSV string for the first three cycles
+function generateFirst3CyclesCSV(){
+	var data, time,
+		nPoints = 800,
+		foundAnIsotope = false,
+		key, i, nextline,
+		propTime, 
+		tempTerm = 0,
+		nStep;
+	
+	data = 'Time['+window.cycleParameters.cycleUnit+']';
+
+	//CSV header row
+	for(key in window.isotopeList){
+		if(window.isotopeList[key].visible){
+			foundAnIsotope = true;
+			data += ',';
+			data += key;
+		}
+	}
+	if(!foundAnIsotope)
+		data += ','; //blank column for page load
+	data += '\n';
+
+	for(i=0; i<nPoints; i++){
+		//add the x-value to the list:
+		time = (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i;
+		data += time/window.cycleParameters.cycleConversion;
+
+		//add a y-value for each isotope:
+		nextline = '';
+		for(key in window.isotopeList){
+			if(window.isotopeList[key].visible){
+				nextline += ',' + (activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, time) + chamberOffset(time, key))
+			}
+		}
+		//an empty graph for page load
+		if(nextline == ''){
+			nextline += ',';
+			nextline += '0';
+		}
+		data += nextline + '\n';
+	}
+
+	return data;
+}
+
+//create the CSV string for the last three cycles 
+//(note this is actually the last 3 cycles worth of time, if the expt duration % cycle time != 0 then there will be a corresponding offset here)
+function generateLast3CyclesCSV(){
+	var data, time,
+		nPoints = 800,
+		foundAnIsotope = false,
+		key, i, nextline,
+		propTime, 
+		tempTerm = 0,
+		nStep;
+	
+	data = 'Time['+window.cycleParameters.cycleUnit+']';
+
+	//CSV header row
+	for(key in window.isotopeList){
+		if(window.isotopeList[key].visible){
+			foundAnIsotope = true;
+			data += ',';
+			data += key;
+		}
+	}
+	if(!foundAnIsotope)
+		data += ','; //blank column for page load
+	data += '\n';
+
+	for(i=0; i<nPoints; i++){
+		//add the x-value to the list:
+		time = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) + (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i
+		data += time/window.cycleParameters.cycleConversion;
+
+		//add a y-value for each isotope:
+		nextline = '';
+		for(key in window.isotopeList){
+			if(window.isotopeList[key].visible){
+				nextline += ',' + (activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, time) + chamberOffset(time, key));
+			}
+		}
+		//an empty graph for page load
+		if(nextline == ''){
+			nextline += ',';
+			nextline += '0';
+		}
+		data += nextline + '\n';
+	}
+
+	return data;
+}
+
+//create the CSV string for the 1000-hour post-experiment decay
+function generatePostExptCSV(){
+	var data, time,
+		nPoints = 800,
+		foundAnIsotope = false,
+		key, i, nextline,
+		propTime, 
+		tempTerm = 0,
+		nStep,
+		finalActivity = {};
+
+	data = 'Time[h]';
+
+	//CSV header row & activity at experiment's end:
+	for(key in window.isotopeList){
+		if(window.isotopeList[key].visible){
+			foundAnIsotope = true;
+			data += ',';
+			data += key;
+			finalActivity[key] = activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000);
+		}
+	}
+
+	if(!foundAnIsotope)
+		data += ','; //blank column for page load
+	data += '\n';
+
+	for(i=0; i<nPoints; i++){
+		//add the x-value to the list:
+		time = (1000 / nPoints)*i*3600000;
+		data += (1000 / nPoints)*i;
+
+		//add a y-value for each isotope:
+		nextline = '';
+		for(key in window.isotopeList){
+			if(window.isotopeList[key].visible){
+				nextline += ',' + finalActivity[key]*Math.exp(-window.isotopeList[key].lifetime * time/1000);
+			}
+		}
+		//an empty graph for page load
+		if(nextline == ''){
+			nextline += ',';
+			nextline += '0';
+		}
+		data += nextline + '\n';
+	}
+
+	return data;
+}
+
+//generate the dygraph for the full experiment duration, and refresh the summary table
+function generateDygraph(divID, CSV, title, xlabel, units){
+	window.duringPlot = new Dygraph(document.getElementById(divID), CSV, {
+		title: title,
+		xlabel: xlabel,
+		ylabel: 'Activity [counts/s]',
+		sigFigs: 2,
+		strokeWidth: 4,
+		yAxisLabelWidth: 75,
+		xAxisHeight: 30,
+		highlightCircleSize: 6,
+		titleHeight: 50,
+		legend: 'always',
+		colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
+		axes:{
+			x: {
+				valueFormatter: function(number, opts, dygraph){
+						return number.toFixed(0) + units;
+				}
+			}
+		}
+	});
+
+	regenSummaryTable();
+}
+
+//regenerate the activity summary table
+function regenSummaryTable(){
+	var table = document.getElementById('summaryActivity'),
+		row, isotope, chamberRes, tapeRes, tapeResLater,
+		postChamber, postTape, postTapeLater,
+		chamberTransitionActivities={}, tapeTransitionActivities={},
+		key;
+
+
+	for(key in window.isotopeList){
+		chamberTransitionActivities[key] = activitySteps(regionScale('chamber') * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
+		tapeTransitionActivities[key] = activitySteps(regionScale('tape') * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
 	}
 
 	//clear table
@@ -151,21 +382,8 @@ function generateDataCSV(state){
 	document.getElementById('titleRow').appendChild(tapeResLater);
 	document.getElementById('titleTapeResLater').innerHTML = 'Tape Box - 12h Later'
 
-	if(state == 'cycle' || state == 'lastCycles') data = 'Time['+window.cycleParameters.cycleUnit+']';
-	else if(state == 'during') data = 'Time['+window.cycleParameters.durationUnit+']';
-	else if(state == 'after') data = 'Time[h]';
-
-	//CSV header row and empty summary table cells:
+	//empty summary table cells:
 	for(key in window.isotopeList){
-		if(window.isotopeList[key].visible){
-			foundAnIsotope = true;
-			data += ',';
-			data += key;
-			lastActivity[key] = 0; //start activities at 0, unless plotting last three cycles:
-			if(state == 'lastCycles') lastActivity[key] = activity(window.region, 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - (window.cycleParameters.beamOn+window.cycleParameters.beamOff)*3 )
-			endOfRunActivity[key] = activity(window.region, 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000)
-		}
-
 		row = document.createElement('tr');
 		row.setAttribute('id', key+'row');
 		table.appendChild(row);
@@ -187,158 +405,14 @@ function generateDataCSV(state){
 		tapeResLater.setAttribute('id', key+'TapeResLater');
 		document.getElementById(key+'row').appendChild(tapeResLater);
 
-	}
-
-	if(!foundAnIsotope)
-		data += ','; //blank column for page load
-	data += '\n';	
-
-	for(i=0; i<nPoints; i++){
-		//add the x-value to the list:
-		if(state == 'during'){
-			time = window.cycleParameters.beamOn + (window.cycleParameters.beamOn + window.cycleParameters.beamOff)*nStep*i;
-			data += time / 3600000 / window.cycleParameters.durationConversion;
-			//time = (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints*3600000)*i;
-			//data += (window.cycleParameters.duration / nPoints)*i;
-		} else if(state == 'cycle'){
-			time = (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i;
-			data += time/window.cycleParameters.cycleConversion;
-		} else if(state == 'lastCycles'){
-			//time in ms
-			time = window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) + (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)*i
-			//append time in whatever units selected to x-data series.
-			data += time/window.cycleParameters.cycleConversion;
-		} else if (state == 'after')
-			data += (1000 / nPoints)*i;
-		//add a y-value for each isotope:
-		nextline = '';
-		for(key in window.isotopeList){
-			if(window.isotopeList[key].visible){
-
-				//the chamber sees not only the 1% activity that backscatters into it,
-				//but some extra activity from the 89% that is deposited on the tape in the
-				//beamspot; this extra term is independent of cycle number though, since
-				//the activity that builds up there is reset to 0 when the tape is cycled into the 
-				//tape box between beam off -> beam on.  Thus we can just caluclate it as a 
-				//simple correction to be tacked on at the end, that doesn't depend on where in the
-				//experiment we are.
-				if(window.region == 'chamber' && state!='after'){
-					propTime = time % (window.cycleParameters.beamOn + window.cycleParameters.beamOff) //time into this cycle
-					if (propTime < window.cycleParameters.beamOn) //still in irradiation step:
-						tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, propTime/1000);
-					else{ //completed irradiation step, now in decay step
-						tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.beamOn/1000);
-						tempTerm = stepActivity(tempTerm, 0, window.isotopeList[key].lifetime, (propTime - window.cycleParameters.beamOn)/1000);
-					}
-				}
-
-				nextline += ',';
-				if(state == 'during'){
-					lastActivity[key] = activity(window.region, Math.max(0, window.cycleParameters.beamOn + (window.cycleParameters.beamOn + window.cycleParameters.beamOff)*nStep*(i-1)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
-					//lastActivity[key] = activity(window.region, Math.max(0, (window.cycleParameters.duration*window.cycleParameters.durationConversion / nPoints)*(i-1)*3600000), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time )
-					nextline += (lastActivity[key]+tempTerm);
-				} else if(state == 'cycle'){
-					lastActivity[key] = activity(window.region, Math.max(0, (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) / nPoints)*(i-1) ), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time );
-					nextline += (lastActivity[key]+tempTerm);
-				} else if(state == 'lastCycles'){
-					lastActivity[key] = activity(window.region, Math.max(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 - 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff), time - (3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff)/nPoints)), lastActivity[key], window.isotopeList[key].yield, window.isotopeList[key].lifetime, time);
-					nextline += (lastActivity[key]+tempTerm);
-				} else if(state == 'after')
-					nextline += activityAfter(endOfRunActivity[key], window.isotopeList[key].lifetime, (1000 / nPoints)*i*3600);
-			}
-		}
-		//an empty graph for page load
-		if(nextline == ''){
-			nextline += ',';
-			nextline += '0';
-		}
-		data += nextline + '\n';
-	}
-
-	//populate summary table with final entries in lastActivity
-	for(key in window.isotopeList){
-		postChamber = activity('chamber', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		postTape = activity('tape', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		postTapeLater = activity('tape', 0, 0, window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
+		//populate summary table with final entries in lastActivity
+		postChamber = activityNew(chamberTransitionActivities[key], 'chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		postTape = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		postTapeLater = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
 		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
 		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
 		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
 	}
-
-	return data;
-}
-
-//return an activity in Bq, with a reasonable SI prefix:
-function printBQ(activity){
-	if(activity > 1000000) return (activity/1000000).toFixed(3) + ' MBq'
-	else if(activity > 1000) return (activity/1000).toFixed(3) + ' kBq'
-	else return (activity).toFixed(3) + ' Bq'
-}
-
-//return an activity in Ci, with a reasonable SI prefix:
-function printCi(activity){
-	var ci = activity / 3.7e+10;
-	if(ci > 1e-3) return (ci*1000).toFixed(3) + ' mCi'
-	else if(ci > 1e-6) return (ci*1000000).toFixed(3) + ' uCi'
-	else return (ci*1000000000).toFixed(3) + ' nCi'
-}
-
-//generate the dygraph for the <state>, either 'during' or 'cycle' or 'lastCycles':
-function generateDuringGraph(state){
-	window.duringPlot = new Dygraph(document.getElementById(state+'Plot'), generateDataCSV(state), {
-		title: (state=='during') ? 'Peak Activity During Experiment' : ((state=='cycle') ? 'Activity Over First Three Cycles' : 'Activity Over Last Three Cycles'),
-		xlabel: (state=='during') ? 'Time ['+window.cycleParameters.durationUnit+']' : 'Time ['+window.cycleParameters.cycleUnit+']',
-		ylabel: 'Activity [counts/s]',
-		sigFigs: 2,
-		strokeWidth: 4,
-		yAxisLabelWidth: 75,
-		xAxisHeight: 30,
-		highlightCircleSize: 6,
-		titleHeight: 50,
-		legend: 'always',
-		colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
-		axes:{
-			x: {
-				valueFormatter: function(number, opts, dygraph){
-						var units;
-						if(state == 'during') units = ' '+window.cycleParameters.durationUnit;
-						else if(state == 'cycle' || state == 'lastCycles') units = ' '+window.cycleParameters.cycleUnit;
-						//else if(state == 'after') units = ' hours'
-						return number.toFixed((state=='during') ? 0 : 2) + units;
-				}
-			}
-		}
-	});
-}
-
-//generate the dygraph for the 'after' state:
-function generateAfterGraph(){
-	window.afterPlot = new Dygraph(document.getElementById('afterPlot'), generateDataCSV('after'), {
-		title: 'Activity After Experiment',
-		xlabel: 'Time [h]',
-		ylabel: 'Activity [counts/s]',
-		sigFigs: 2,
-		strokeWidth: 4,
-		yAxisLabelWidth: 75,
-		xAxisHeight: 30,
-		highlightCircleSize: 6,
-		titleHeight: 50,
-		legend: 'always',
-		colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
-		axes:{
-			x: {
-				valueFormatter: function(number, opts, dygraph){
-						return number.toFixed() + ' hours';
-				},
-				sigFigs: 2
-			}
-		}
-	});
-}
-
-//activity as a function of time, after experiment is finished.
-function activityAfter(peakActivity, lifetime, time){
-	return peakActivity * Math.exp(-1*lifetime*time);
 }
 
 //starting with initial activity <A0>, return Activity after <time>, under beam <rate> for isotope with <lifetime>
@@ -346,104 +420,119 @@ function stepActivity(A0, rate, lifetime, time){
 	return rate * (1 - Math.exp(-1*lifetime*time)) + A0 * Math.exp(-1*lifetime*time);
 }
 
-//calculate the activity at time <t>[ms], given a beam-on <rate>[counts/s], isotope <lifetime>[s-1], 
-//and that the activity was <A0>[counts/s] at time <t0>[ms], t and t0 in ms
-function activity(region, t0, A0, rate, lifetime, t){
-	var beamOn, firstPeriodTimeElapsed,
-		propTime,
-		stepTime = t0,
-		stepA = A0,
-		scaleConstant, 
-		tempTerm = 0;
+//return an array giving the activity at each beam switch (off->on and on->off) for an isotope with 
+//beam-on <rate>[counts/s] & isotope <lifetime>[s-1], up to <maxtime>[ms] - if <maxtime>==0, defaults
+//to full experiment length
+function activitySteps(rate, lifetime, maxtime){
+	var A_n = [0], //array of activities at each beam transition
+		timeRemaining = maxtime, //time [ms] remaining in experiment
+		a = rate * (1 - Math.exp(-lifetime*window.cycleParameters.beamOn/1000)),
+		b = Math.exp(-lifetime*window.cycleParameters.beamOff/1000),
+		c = Math.exp(-lifetime*window.cycleParameters.beamOn/1000)
 
-	//scale for each region:
-	if(region == 'tape') scaleConstant = 0.89;
-	else if(region == 'chamber') scaleConstant = 0.01;
-	else if(region == 'beamline') scaleConstant = 0.1;
+	if(!maxtime)
+		timeRemaining = window.cycleParameters.duration * window.cycleParameters.durationConversion * 3600000;
 
-	//figure out if beam is on or off at time t0, and how long its been in that state:
-	firstPeriodTimeElapsed = t0 % (window.cycleParameters.beamOn + window.cycleParameters.beamOff);
-	if(firstPeriodTimeElapsed < window.cycleParameters.beamOn) beamOn = true; //ie beam is on and has been on for <firstPeriodTimeElapsed>
-	else{
-		firstPeriodTimeElapsed -= window.cycleParameters.beamOn;  //beam has been off for this long
-		beamOn = false; //beam is off
+	while(timeRemaining > 0){
+		//beam on:
+		A_n[A_n.length] = a + A_n[A_n.length-1] * c;
+		timeRemaining -= window.cycleParameters.beamOn;
+		if(timeRemaining > 0){
+			//beam off
+			A_n[A_n.length] = A_n[A_n.length-1] * b;
+			timeRemaining -= window.cycleParameters.beamOff;
+		}
 	}
 
-	//finish the state the beam was in at t0, if there's enough time before t.
-	if(beamOn) //beam is on
-		propTime = window.cycleParameters.beamOn - firstPeriodTimeElapsed;
-	else //beam is off
-		propTime = window.cycleParameters.beamOff - firstPeriodTimeElapsed;
-	//cut off propagation at time t if necessary:
-	propTime = Math.min(propTime, t-t0);
-	//propagate to the end of this state:
-	if(beamOn)
-		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000); //lifetimes recorded in seconds
-	else
-		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
-	stepTime += propTime;
+	return A_n;
+}	
 
-	//step through whole cycles until we get as close to t without going over 
-	while(stepTime + window.cycleParameters.beamOn + window.cycleParameters.beamOff < t){
-		//switch the beam state
-		beamOn = !beamOn;
+//compute the activity at time <t>[ms] given <rate>[counts/s] & isotope <lifetime>[s-1] in <region>, with activitySteps pre-evaluated in <A_n>:
+function activityNew(A_n, region, rate, lifetime, t){
+	var A, i, time;
 
-		if(beamOn){
-			propTime = window.cycleParameters.beamOn;
-			stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
-		}
-		else{
-			propTime = window.cycleParameters.beamOff;
-			stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
-		}
-		stepTime += propTime;
+	//determine which entry in A_n immediately preceeds time t:
+	i = Math.floor(t / (window.cycleParameters.beamOff + window.cycleParameters.beamOn)) * 2; //2 steps each full cycle
+	if( (t % (window.cycleParameters.beamOff + window.cycleParameters.beamOn)) >= window.cycleParameters.beamOn)
+		i++; //extra step if the terminating cycle had enough time to finish it's beam on period.
+	//determine time into current transition:
+	time = (t % (window.cycleParameters.beamOff + window.cycleParameters.beamOn));
+	if(time >= window.cycleParameters.beamOn)
+		time -= window.cycleParameters.beamOn;
 
+	//propagate the activity at A_n[i] to A(t):
+	//i even -> beam is on at time t
+	if(i%2 == 0){
+		A = rate * regionScale(region) * (1 - Math.exp(-lifetime*time/1000)) + A_n[i]*Math.exp(-lifetime*time/1000);
+	//i odd -> beam is off at time t
+	} else {
+		A = A_n[i]*Math.exp(-lifetime*time/1000);
 	}
 
-	//we're now less than one cycle away from t.  Attempt to propagate one step:
-	beamOn = !beamOn;
-	if(beamOn) //beam is on
-		propTime = window.cycleParameters.beamOn;
-	else //beam is off
-		propTime = window.cycleParameters.beamOff;
-	//cut off propagation at time t if necessary:
-	propTime = Math.min(propTime, t-stepTime);
-	//propagate to the end of this state:
-	if(beamOn)
-		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
-	else
-		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
-	stepTime += propTime;	
-
-	//return if we've reached t:
-	if(stepTime == t)
-		return stepA + tempTerm;
-
-	//finish the last step if we didn't just return:
-	beamOn = !beamOn;
-	propTime = t-stepTime;
-	//propagate to the end of this state:
-	if(beamOn)
-		stepA = stepActivity(stepA, scaleConstant*rate, lifetime, propTime/1000);
-	else
-		stepA = stepActivity(stepA, 0, lifetime, propTime/1000);
-
-	return stepA + tempTerm;
-
+	return A;
 }
 
+
+//the chamber sees not only the 1% activity that backscatters into it,
+//but some extra activity from the 89% that is deposited on the tape in the
+//beamspot; this extra term is independent of cycle number though, since
+//the activity that builds up there is reset to 0 when the tape is cycled into the 
+//tape box between beam off -> beam on.  Thus we can just caluclate it as a 
+//simple correction to be tacked on at the end, that doesn't depend on where in the
+//experiment we are.
+//<time>[ms] into experiment, <key> from window.isotopeList indicating which isotope we're doing this for
+function chamberOffset(time, key){
+	var propTime, tempTerm;
+
+	if(window.region != 'chamber') return 0;
+
+	propTime = time % (window.cycleParameters.beamOn + window.cycleParameters.beamOff) //time into this cycle
+	if (propTime < window.cycleParameters.beamOn) //still in irradiation step:
+		tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, propTime/1000);
+	else{ //completed irradiation step, now in decay step
+		tempTerm = stepActivity(0, 0.89*window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.beamOn/1000);
+		tempTerm = stepActivity(tempTerm, 0, window.isotopeList[key].lifetime, (propTime - window.cycleParameters.beamOn)/1000);
+	}
+
+	return tempTerm;
+}
 //repaint dygraphs as necessary:
 function repaint(){
-	var onDisplay = document.getElementById('stateFlag').state;
+	var onDisplay = document.getElementById('stateFlag').state,
+		key, 
+		scaleConstant = regionScale(window.region);
 
-	if(onDisplay == 0)
-		generateDuringGraph('during');
-	else if(onDisplay == 1)
-		generateDuringGraph('cycle');
-	else if(onDisplay == 2)
-		generateDuringGraph('lastCycles');
-	else if(onDisplay == 3)
-		generateAfterGraph();
+	//repaint full experiment view
+	if(onDisplay == 0){
+		window.transitionActivities = {}
+		//regenerate full activity lattice
+		for(key in window.isotopeList){
+			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime)
+		}
+		generateDygraph('duringPlot', generateFullProfileCSV(), 'Peak Activity During Experiment', 'Time ['+window.cycleParameters.durationUnit+']', ' '+window.cycleParameters.durationUnit);
+	//repaint first 3 cycles
+	} else if(onDisplay == 1){
+		window.transitionActivities = {}
+		//regenerate activity lattice
+		for(key in window.isotopeList){
+			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
+		}
+		generateDygraph('cyclePlot', generateFirst3CyclesCSV(), 'Activity Over First Three Cycles', 'Time ['+window.cycleParameters.cycleUnit+']', ' '+window.cycleParameters.cycleUnit);
+	//repaint last 3 cycles
+	}else if(onDisplay == 2){
+		//regenerate full activity lattice
+		for(key in window.isotopeList){
+			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime)
+		}
+		generateDygraph('lastCyclesPlot', generateLast3CyclesCSV(), 'Activity Over Last Three Cycles', 'Time ['+window.cycleParameters.cycleUnit+']', ' '+window.cycleParameters.cycleUnit);
+	//repaint post-experiment decay
+	} else if(onDisplay == 3){
+		//regenerate full activity lattice
+		for(key in window.isotopeList){
+			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
+		}		
+		generateDygraph('afterPlot', generatePostExptCSV(), 'Activity After Experiment', 'Time [h]', ' hours');
+	}
 }
 
 //scrape parameters out of cycle definition table
@@ -475,4 +564,11 @@ function selected(selectID){
         value = select.options[select.selectedIndex].value;
 
     return value;
+}
+
+//return the appropriate scale constant as a function of <region>:
+function regionScale(region){
+	if(region == 'tape') return 0.89;
+	else if(region == 'chamber') return 0.01;
+	else if(region == 'beamline') return 0.1;
 }
