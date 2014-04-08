@@ -432,7 +432,7 @@ function activitySteps(rate, lifetime, maxtime){
 
 	if(!maxtime)
 		timeRemaining = window.cycleParameters.duration * window.cycleParameters.durationConversion * 3600000;
-
+console.log([maxtime, timeRemaining])
 	while(timeRemaining > 0){
 		//beam on:
 		A_n[A_n.length] = a + A_n[A_n.length-1] * c;
