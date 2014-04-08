@@ -347,12 +347,14 @@ function regenSummaryTable(){
 		row, isotope, chamberRes, tapeRes, tapeResLater,
 		postChamber, postTape, postTapeLater,
 		chamberTransitionActivities={}, tapeTransitionActivities={},
-		key;
+		key,
+		//don't calculate past the first three cycles if we don't need to:
+		maxtime = (document.getElementById('stateFlag').state == 1) ? 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) : null;
 
 
 	for(key in window.isotopeList){
-		chamberTransitionActivities[key] = activitySteps(regionScale('chamber') * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
-		tapeTransitionActivities[key] = activitySteps(regionScale('tape') * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
+		chamberTransitionActivities[key] = activitySteps(regionScale('chamber') * window.isotopeList[key].yield, window.isotopeList[key].lifetime, maxtime);
+		tapeTransitionActivities[key] = activitySteps(regionScale('tape') * window.isotopeList[key].yield, window.isotopeList[key].lifetime, maxtime);
 	}
 
 	//clear table
@@ -515,7 +517,6 @@ function repaint(){
 		window.transitionActivities = {}
 		//regenerate activity lattice
 		for(key in window.isotopeList){
-			console.log(key)
 			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime, 3*(window.cycleParameters.beamOn + cycleParameters.beamOff));
 		}
 		generateDygraph('cyclePlot', generateFirst3CyclesCSV(), 'Activity Over First Three Cycles', 'Time ['+window.cycleParameters.cycleUnit+']', ' '+window.cycleParameters.cycleUnit);
