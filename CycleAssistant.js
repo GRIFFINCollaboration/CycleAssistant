@@ -178,7 +178,7 @@ function approxMax(N, rate, t_on, t_off, lifetime){
 
 	max *= 1 - Math.exp(-lifetime*t_on);
 	max *= (N-1)/2 + Math.exp(-lifetime*(t_on+t_off)*(N-1)/2);
-
+console.log(max)
 	return max;
 } 
 
