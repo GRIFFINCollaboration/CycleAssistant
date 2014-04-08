@@ -515,6 +515,7 @@ function repaint(){
 		window.transitionActivities = {}
 		//regenerate activity lattice
 		for(key in window.isotopeList){
+			console.log(key)
 			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime, 3*(window.cycleParameters.beamOn + cycleParameters.beamOff));
 		}
 		generateDygraph('cyclePlot', generateFirst3CyclesCSV(), 'Activity Over First Three Cycles', 'Time ['+window.cycleParameters.cycleUnit+']', ' '+window.cycleParameters.cycleUnit);
