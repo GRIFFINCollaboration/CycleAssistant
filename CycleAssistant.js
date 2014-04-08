@@ -134,7 +134,8 @@ function generateFullProfileCSV(){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
-			nTransitions = window.transitionActivities[key].length //all the same across keys, doesn't matter which one we use
+			//nTransitions = window.transitionActivities[key].length //all the same across keys, doesn't matter which one we use
+			nTransitions = Math.floor(window.cycleParameters.duration*window.cycleParameters.durationUnit / (window.cycleParameters.beamOn + window.cycleParameters.beamOff))*2
 		}
 	}
 
