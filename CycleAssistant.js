@@ -138,7 +138,7 @@ function generateFullProfileCSV(){
 			nTransitions = Math.floor(window.cycleParameters.duration*window.cycleParameters.durationUnit / (window.cycleParameters.beamOn + window.cycleParameters.beamOff))*2
 		}
 	}
-
+console.log([window.cycleParameters.duration, window.cycleParameters.durationUnit, window.cycleParameters.beamOn, window.cycleParameters.beamOff])
 	//decide how many points to sample - shoot for about 1000 maxima spread over the experiment
 	nStep = Math.floor(nTransitions / 2); // == how many maxima
 	nStep = Math.floor(nStep/1000); //skip this many maxima between points to cover the experiment in about 1000 points.
