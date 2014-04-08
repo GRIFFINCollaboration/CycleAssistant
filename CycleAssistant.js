@@ -156,7 +156,8 @@ function generateFullProfileCSV(){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
-				nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));				
+				//nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));
+				nextline += ',' + approxMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime*1000 ) + chamberOffset(time, key);
 			}
 		}
 		data += nextline + '\n';
@@ -169,6 +170,16 @@ function generateFullProfileCSV(){
 
 	return data;
 }
+
+//approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms]
+function approxMax(N, rate, t_on, t_off, lifetime){
+	var max = rate;
+
+	max *= 1 - Math.exp(-lifetime*t_on);
+	max *= (N-1)/2 + Math.exp(-lifetime*(t_on+t_off)*(N-1)/2);
+
+	return max;
+} 
 
 //create the CSV string for the first three cycles
 function generateFirst3CyclesCSV(){
@@ -434,7 +445,7 @@ function activitySteps(rate, lifetime, maxtime){
 
 	if(!maxtime)
 		timeRemaining = window.cycleParameters.duration * window.cycleParameters.durationConversion * 3600000;
-console.log([maxtime, timeRemaining])
+
 	while(timeRemaining > 0){
 		//beam on:
 		A_n[A_n.length] = a + A_n[A_n.length-1] * c;
@@ -508,9 +519,9 @@ function repaint(){
 	if(onDisplay == 0){
 		window.transitionActivities = {}
 		//regenerate full activity lattice
-		for(key in window.isotopeList){
-			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime)
-		}
+		//for(key in window.isotopeList){
+		//	window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime)
+		//}
 		generateDygraph('duringPlot', generateFullProfileCSV(), 'Peak Activity During Experiment', 'Time ['+window.cycleParameters.durationUnit+']', ' '+window.cycleParameters.durationUnit);
 	//repaint first 3 cycles
 	} else if(onDisplay == 1){
