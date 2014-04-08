@@ -143,7 +143,7 @@ function generateFullProfileCSV(){
 	nStep = Math.floor(nTransitions / 2); // == how many maxima
 	nStep = Math.floor(nStep/1000); //skip this many maxima between points to cover the experiment in about 1000 points.
 	nPoints = Math.floor(nTransitions / 2 / nStep);
-
+console.log(nPoints)
 	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
