@@ -172,7 +172,7 @@ function generateFullProfileCSV(){
 	return data;
 }
 
-// <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
+// activity at <N>th beam transition (initial beam on is N=0) for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
 function nthMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
 		numerator, denominator;
@@ -360,15 +360,7 @@ function regenSummaryTable(){
 		row, isotope, chamberRes, tapeRes, tapeResLater,
 		postChamber, postTape, postTapeLater,
 		chamberTransitionActivities={}, tapeTransitionActivities={},
-		key,
-		//don't calculate past the first three cycles if we don't need to:
-		maxtime = (document.getElementById('stateFlag').state == 1) ? 3*(window.cycleParameters.beamOn + window.cycleParameters.beamOff) : null;
-
-
-	for(key in window.isotopeList){
-		chamberTransitionActivities[key] = activitySteps(regionScale('chamber') * window.isotopeList[key].yield, window.isotopeList[key].lifetime, maxtime);
-		tapeTransitionActivities[key] = activitySteps(regionScale('tape') * window.isotopeList[key].yield, window.isotopeList[key].lifetime, maxtime);
-	}
+		key;
 
 	//clear table
 	table.innerHTML = '';
@@ -421,9 +413,12 @@ function regenSummaryTable(){
 		document.getElementById(key+'row').appendChild(tapeResLater);
 
 		//populate summary table with final entries in lastActivity
-		postChamber = activityNew(chamberTransitionActivities[key], 'chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		postTape = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		postTapeLater = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
+		//postChamber = activityNew(chamberTransitionActivities[key], 'chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		//postTape = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
+		//postTapeLater = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
+		postChamber = finalActivity('chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
+		postTape = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
+		postTapeLater = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000)*Math.exp(-window.isotopeList[key].lifetime*12*3600);
 		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
 		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
 		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
@@ -433,6 +428,32 @@ function regenSummaryTable(){
 //starting with initial activity <A0>, return Activity after <time>, under beam <rate> for isotope with <lifetime>
 function stepActivity(A0, rate, lifetime, time){
 	return rate * (1 - Math.exp(-1*lifetime*time)) + A0 * Math.exp(-1*lifetime*time);
+}
+
+//determine the end-of-run activity in <region> for an isotope delivered at <rate> with <lifetime>
+function finalActivity(region, rate, lifetime){
+	var expTime = window.cycleParameters.duration * window.cycleParameters.durationConversion*3600000,
+		lastMaxIndex = 0,
+		remainingTime, lastMaxActivity, finActivity;
+
+	//determine activity at final beamOff:
+	lastMaxIndex += 2*Math.floor(expTime / (window.cycleParameters.beamOn + window.cycleParameters.beamOff)); //no. complete cycles
+	remainingTime = expTime - lastMaxIndex/2*(window.cycleParameters.beamOn + window.cycleParameters.beamOff); //time remaining after last complete cycle
+	if(remainingTime < window.cycleParameters.beamOn) //exp terminates during beam on
+		lastMaxIndex--;
+	else  //exp terminates during beam off
+		lastMaxIndex++;
+	lastMaxActivity = nthMax(lastMaxIndex, rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
+
+	//propagate lastMaxActivity to end of run
+	if(remainingTime < window.cycleParameters.beamOn){ //exp terminates during beam on
+		finActivity = stepActivity(lastMaxActivity, 0, lifetime, window.cycleParameters.beamOff);
+		finActivity = stepActivity(finActivity, rate, lifetime, remainingTime);
+	} else { //exp terminates during beam off
+		finActivity = stepActivity(lastMaxActivity, rate, lifetime, remainingTime - window.cycleParameters.beamOn)
+	}
+
+	return finalActivity
 }
 
 //return an array giving the activity at each beam switch (off->on and on->off) for an isotope with 
