@@ -454,7 +454,7 @@ function finalActivity(region, rate, lifetime){
 		finActivity = stepActivity(lastMaxActivity, rate, lifetime, remainingTime - window.cycleParameters.beamOn)
 	}
 console.log(finalActivity)
-	return finalActivity
+	return finActivity
 }
 
 //return an array giving the activity at each beam switch (off->on and on->off) for an isotope with 
