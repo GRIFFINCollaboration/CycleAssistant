@@ -158,7 +158,7 @@ function generateFullProfileCSV(){
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
 				//nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));
-				nextline += ',' + approxMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
+				nextline += ',' + nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
 			}
 		}
 		data += nextline + '\n';
@@ -172,23 +172,10 @@ function generateFullProfileCSV(){
 	return data;
 }
 
-//approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
-function approxMax(N, rate, t_on, t_off, lifetime){
+// <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
+function nthMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
-		//decayFactor = 0,
-		//nextTerm, k;
 		numerator, denominator;
-/*
-	for(k=0; k<(N-1)/2; k++){
-		nextTerm = Math.exp(-k*lifetime*(t_off + t_on));
-		decayFactor += nextTerm;
-		if(nextTerm < decayFactor*0.01/((N-1)/2-k)) //looks like all subsequent terms will make < 1% correction, quit.
-		//if(nextTerm < decayFactor*0.001) //correction terms at the 1/1000 level, quit - not N dependent (good), but could the sum from k->N be large still? -> yep, still large.
-			break;
-	}
-
-	max *= decayFactor;
-*/
 
     numerator = 1 - Math.pow(Math.exp(-lifetime*(t_on+t_off)), (N-1)/2 + 1);
     denominator = 1 - Math.exp(-lifetime*(t_on+t_off));
@@ -364,7 +351,7 @@ function generateDygraph(divID, CSV, title, xlabel, units){
 		}
 	});
 
-	regenSummaryTable();
+	//regenSummaryTable();
 }
 
 //regenerate the activity summary table
