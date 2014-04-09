@@ -181,7 +181,8 @@ function approxMax(N, rate, t_on, t_off, lifetime){
 	for(k=0; k<(N-1)/2; k++){
 		nextTerm = Math.exp(-k*lifetime*(t_off + t_on));
 		decayFactor += nextTerm;
-		if(nextTerm < decayFactor*0.01/(N-k)) //looks like all subsequent terms will make < 1% correction, quit.
+		//if(nextTerm < decayFactor*0.01/((N-1)/2-k)) //looks like all subsequent terms will make < 1% correction, quit.
+		if(nextTerm < decayFactor*0.001) //correction terms at the 1/1000 level, quit - not N dependent (good), but could the sum from k->N be large still?
 			break;
 	}
 
