@@ -175,20 +175,25 @@ function generateFullProfileCSV(){
 //approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
 function approxMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
-		decayFactor = 0,
-		nextTerm, k;
-
+		//decayFactor = 0,
+		//nextTerm, k;
+		numerator, denominator;
+/*
 	for(k=0; k<(N-1)/2; k++){
 		nextTerm = Math.exp(-k*lifetime*(t_off + t_on));
 		decayFactor += nextTerm;
 		if(nextTerm < decayFactor*0.01/((N-1)/2-k)) //looks like all subsequent terms will make < 1% correction, quit.
-		//if(nextTerm < decayFactor*0.001) //correction terms at the 1/1000 level, quit - not N dependent (good), but could the sum from k->N be large still?
+		//if(nextTerm < decayFactor*0.001) //correction terms at the 1/1000 level, quit - not N dependent (good), but could the sum from k->N be large still? -> yep, still large.
 			break;
 	}
 
 	max *= decayFactor;
+*/
 
-	return max;
+    numerator = 1 - Math.pow(Math.exp(-lifetime*(t_on+t_off)), (N-1)/2 + 1);
+    denominator = 1 - Math.exp(-lifetime*(t_on+t_off));
+
+	return max*numerator/denominator;
 } 
 
 //create the CSV string for the first three cycles
