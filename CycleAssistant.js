@@ -141,7 +141,7 @@ function generateFullProfileCSV(){
 	nStep = nTransitions / 2; // == how many maxima
 	nStep = Math.max(1, Math.floor(nStep/1000)); //skip this many maxima between points to cover the experiment in about 1000 points.
 	nPoints = Math.floor(nTransitions / 2 / nStep);
-	
+
 	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
@@ -174,7 +174,7 @@ function generateFullProfileCSV(){
 function nthMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
 		numerator, denominator;
-
+if(N==1) console.log(max)
     numerator = 1 - Math.pow(Math.exp(-lifetime*(t_on+t_off)), (N-1)/2 + 1);
     denominator = 1 - Math.exp(-lifetime*(t_on+t_off));
 
