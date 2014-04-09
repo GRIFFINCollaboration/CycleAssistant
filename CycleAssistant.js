@@ -419,9 +419,10 @@ function regenSummaryTable(){
 		postChamber = finalActivity('chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
 		postTape = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
 		postTapeLater = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000)*Math.exp(-window.isotopeList[key].lifetime*12*3600);
-		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
-		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
-		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
+		//document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
+		//document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
+		//document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
+		console.log([postChamber, postTape, postTapeLater])
 	}
 }
 
