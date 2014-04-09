@@ -453,7 +453,7 @@ function finalActivity(region, rate, lifetime){
 	} else { //exp terminates during beam off
 		finActivity = stepActivity(lastMaxActivity, rate, lifetime, remainingTime - window.cycleParameters.beamOn)
 	}
-
+console.log(finalActivity)
 	return finalActivity
 }
 
