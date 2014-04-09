@@ -134,16 +134,14 @@ function generateFullProfileCSV(){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
-			//nTransitions = window.transitionActivities[key].length //all the same across keys, doesn't matter which one we use
-			nTransitions = Math.floor(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 / (window.cycleParameters.beamOn + window.cycleParameters.beamOff))*2
 		}
 	}
-//console.log([window.cycleParameters.duration, window.cycleParameters.durationConversion, window.cycleParameters.beamOn, window.cycleParameters.beamOff, nTransitions])
 	//decide how many points to sample - shoot for about 1000 maxima spread over the experiment
-	nStep = Math.floor(nTransitions / 2); // == how many maxima
-	nStep = Math.floor(nStep/1000); //skip this many maxima between points to cover the experiment in about 1000 points.
+	nTransitions = Math.floor(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 / (window.cycleParameters.beamOn + window.cycleParameters.beamOff))*2
+	nStep = nTransitions / 2; // == how many maxima
+	nStep = Math.max(1, Math.floor(nStep/1000)); //skip this many maxima between points to cover the experiment in about 1000 points.
 	nPoints = Math.floor(nTransitions / 2 / nStep);
-//console.log(nPoints)
+	
 	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
