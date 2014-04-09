@@ -158,7 +158,7 @@ function generateFullProfileCSV(){
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
 				//nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));
-				nextline += ',' + approxMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime*1000 ) + chamberOffset(time, key);
+				nextline += ',' + approxMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
 			}
 		}
 		data += nextline + '\n';
@@ -172,7 +172,7 @@ function generateFullProfileCSV(){
 	return data;
 }
 
-//approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms]
+//approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms-1]
 function approxMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
 		decayFactor = 0,
