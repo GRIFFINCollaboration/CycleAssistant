@@ -138,7 +138,7 @@ function generateFullProfileCSV(){
 			nTransitions = Math.floor(window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000 / (window.cycleParameters.beamOn + window.cycleParameters.beamOff))*2
 		}
 	}
-console.log([window.cycleParameters.duration, window.cycleParameters.durationConversion, window.cycleParameters.beamOn, window.cycleParameters.beamOff, nTransitions])
+//console.log([window.cycleParameters.duration, window.cycleParameters.durationConversion, window.cycleParameters.beamOn, window.cycleParameters.beamOff, nTransitions])
 	//decide how many points to sample - shoot for about 1000 maxima spread over the experiment
 	nStep = Math.floor(nTransitions / 2); // == how many maxima
 	nStep = Math.floor(nStep/1000); //skip this many maxima between points to cover the experiment in about 1000 points.
@@ -174,11 +174,19 @@ console.log([window.cycleParameters.duration, window.cycleParameters.durationCon
 
 //approximate the <N>th maxima for production <rate>, beam on <t_on>[ms], beam off <t_off>[ms], <lifetime>[ms]
 function approxMax(N, rate, t_on, t_off, lifetime){
-	var max = rate;
+	var max = rate * (1 - Math.exp(-lifetime*t_on)),
+		decayFactor = 0,
+		nextTerm, k;
 
-	max *= 1 - Math.exp(-lifetime*t_on);
-	max *= (N-1)/2 + Math.exp(-lifetime*(t_on+t_off)*(N-1)/2);
-console.log(max)
+	for(k=0; k<(N-1)/2; k++){
+		nextTerm = Math.exp(-k*lifetime*(t_off + t_on));
+		decayFactor += nextTerm;
+		if(nextTerm < 1/N)
+			break;
+	}
+
+	max *= decayFactor;
+
 	return max;
 } 
 
