@@ -186,7 +186,7 @@ function approxMax(N, rate, t_on, t_off, lifetime){
 	}
 
 	max *= decayFactor;
-console.log(max)
+
 	return max;
 } 
 
