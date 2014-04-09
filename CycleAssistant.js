@@ -351,7 +351,7 @@ function generateDygraph(divID, CSV, title, xlabel, units){
 		}
 	});
 
-	//regenSummaryTable();
+	regenSummaryTable();
 }
 
 //regenerate the activity summary table
