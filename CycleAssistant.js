@@ -181,7 +181,7 @@ function approxMax(N, rate, t_on, t_off, lifetime){
 	for(k=0; k<(N-1)/2; k++){
 		nextTerm = Math.exp(-k*lifetime*(t_off + t_on));
 		decayFactor += nextTerm;
-		if(nextTerm < 1/N)
+		if(nextTerm < decayFactor*0.01/(N-k)) //looks like all subsequent terms will make < 1% correction, quit.
 			break;
 	}
 
