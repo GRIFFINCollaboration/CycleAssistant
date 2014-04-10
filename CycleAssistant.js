@@ -145,7 +145,7 @@ function generateFullProfileCSV(){
 	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
-
+console.log(window.region)
 	for(i=0; i<nPoints; i++){
 		//add the x-value to the list:
 		time = window.cycleParameters.beamOn + i*nStep*(window.cycleParameters.beamOn + window.cycleParameters.beamOff);
