@@ -155,8 +155,7 @@ function generateFullProfileCSV(){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
-				console.log(chamberOffset(time, key))
-				nextline += ',' + nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
+				nextline += ',' + (nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key));
 			}
 		}
 		data += nextline + '\n';
@@ -174,7 +173,7 @@ function generateFullProfileCSV(){
 function nthMax(N, rate, t_on, t_off, lifetime){
 	var max = rate * (1 - Math.exp(-lifetime*t_on)),
 		numerator, denominator;
-if(N==1) console.log(max)
+
     numerator = 1 - Math.pow(Math.exp(-lifetime*(t_on+t_off)), (N-1)/2 + 1);
     denominator = 1 - Math.exp(-lifetime*(t_on+t_off));
 
@@ -420,7 +419,6 @@ function regenSummaryTable(){
 		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
 		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
 		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
-//console.log([postChamber, postTape, postTapeLater])
 	}
 }
 
@@ -451,7 +449,7 @@ function finalActivity(region, rate, lifetime){
 	} else { //exp terminates during beam off
 		finActivity = stepActivity(lastMaxActivity, rate, lifetime, remainingTime - window.cycleParameters.beamOn)
 	}
-//console.log(finActivity)
+
 	return finActivity
 }
 
