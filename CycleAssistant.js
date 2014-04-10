@@ -155,8 +155,7 @@ function generateFullProfileCSV(){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
-				//nextline += ',' + (window.transitionActivities[key][i*nStep*2 + 1] + chamberOffset(time, key));
-				nextline += ',' + nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) //+ chamberOffset(time, key);
+				nextline += ',' + nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
 			}
 		}
 		data += nextline + '\n';
