@@ -145,7 +145,7 @@ function generateFullProfileCSV(){
 	if(!foundAnIsotope)
 		data += ','; //blank column for page load
 	data += '\n';	
-console.log(window.region)
+
 	for(i=0; i<nPoints; i++){
 		//add the x-value to the list:
 		time = window.cycleParameters.beamOn + i*nStep*(window.cycleParameters.beamOn + window.cycleParameters.beamOff);
@@ -155,6 +155,7 @@ console.log(window.region)
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
+				console.log(chamberOffset(time, key))
 				nextline += ',' + nthMax(i*nStep*2 + 1, window.isotopeList[key].yield, window.cycleParameters.beamOn, window.cycleParameters.beamOff, window.isotopeList[key].lifetime/1000 ) + chamberOffset(time, key);
 			}
 		}
