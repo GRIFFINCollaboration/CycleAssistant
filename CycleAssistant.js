@@ -293,7 +293,6 @@ function generatePostExptCSV(){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
-			//finalActivity[key] = activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000);
 		}
 	}
 
@@ -310,7 +309,6 @@ function generatePostExptCSV(){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
-				//nextline += ',' + finalActivity[key]*Math.exp(-window.isotopeList[key].lifetime * time/1000);
 				nextline += ',' + finalActivity(window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000)*Math.exp(-window.isotopeList[key].lifetime * time/1000);
 			}
 		}
@@ -356,7 +354,6 @@ function regenSummaryTable(){
 	var table = document.getElementById('summaryActivity'),
 		row, isotope, chamberRes, tapeRes, tapeResLater,
 		postChamber, postTape, postTapeLater,
-		chamberTransitionActivities={}, tapeTransitionActivities={},
 		key;
 
 	//clear table
@@ -410,9 +407,6 @@ function regenSummaryTable(){
 		document.getElementById(key+'row').appendChild(tapeResLater);
 
 		//populate summary table with final entries in lastActivity
-		//postChamber = activityNew(chamberTransitionActivities[key], 'chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		//postTape = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000));
-		//postTapeLater = activityNew(tapeTransitionActivities[key], 'tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime, (window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000))*Math.exp(-window.isotopeList[key].lifetime*12*3600);
 		postChamber = finalActivity('chamber', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
 		postTape = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000);
 		postTapeLater = finalActivity('tape', window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000)*Math.exp(-window.isotopeList[key].lifetime*12*3600);
@@ -537,11 +531,6 @@ function repaint(){
 
 	//repaint full experiment view
 	if(onDisplay == 0){
-		window.transitionActivities = {}
-		//regenerate full activity lattice
-		//for(key in window.isotopeList){
-		//	window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime)
-		//}
 		generateDygraph('duringPlot', generateFullProfileCSV(), 'Peak Activity During Experiment', 'Time ['+window.cycleParameters.durationUnit+']', ' '+window.cycleParameters.durationUnit);
 	//repaint first 3 cycles
 	} else if(onDisplay == 1){
@@ -559,11 +548,7 @@ function repaint(){
 		}
 		generateDygraph('lastCyclesPlot', generateLast3CyclesCSV(), 'Activity Over Last Three Cycles', 'Time ['+window.cycleParameters.cycleUnit+']', ' '+window.cycleParameters.cycleUnit);
 	//repaint post-experiment decay
-	} else if(onDisplay == 3){
-		//regenerate full activity lattice
-		for(key in window.isotopeList){
-			window.transitionActivities[key] = activitySteps(scaleConstant * window.isotopeList[key].yield, window.isotopeList[key].lifetime);
-		}		
+	} else if(onDisplay == 3){		
 		generateDygraph('afterPlot', generatePostExptCSV(), 'Activity After Experiment', 'Time [h]', ' hours');
 	}
 }
