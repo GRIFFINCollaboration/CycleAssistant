@@ -283,8 +283,7 @@ function generatePostExptCSV(){
 		key, i, nextline,
 		propTime, 
 		tempTerm = 0,
-		nStep,
-		finalActivity = {};
+		nStep;
 
 	data = 'Time[h]';
 
