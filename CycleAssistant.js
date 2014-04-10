@@ -294,7 +294,7 @@ function generatePostExptCSV(){
 			foundAnIsotope = true;
 			data += ',';
 			data += key;
-			finalActivity[key] = activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000);
+			//finalActivity[key] = activityNew(window.transitionActivities[key], window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000);
 		}
 	}
 
@@ -311,7 +311,8 @@ function generatePostExptCSV(){
 		nextline = '';
 		for(key in window.isotopeList){
 			if(window.isotopeList[key].visible){
-				nextline += ',' + finalActivity[key]*Math.exp(-window.isotopeList[key].lifetime * time/1000);
+				//nextline += ',' + finalActivity[key]*Math.exp(-window.isotopeList[key].lifetime * time/1000);
+				nextline += ',' + finalActivity(window.region, window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000)*Math.exp(-window.isotopeList[key].lifetime * time/1000);
 			}
 		}
 		//an empty graph for page load
