@@ -398,7 +398,7 @@ function regenSummaryTable(){
 		//populate summary table with final entries in lastActivity
 		postChamber = Activity(window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000, 'chamber');
 		postTape = Activity(window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000, 'tape');
-		postTape = Activity(window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000, 'tape')*Math.exp(-window.isotopeList[key].lifetime*12*3600);
+		postTapeLater = Activity(window.isotopeList[key].yield, window.isotopeList[key].lifetime/1000, window.cycleParameters.duration*window.cycleParameters.durationConversion*3600000, 'tape')*Math.exp(-window.isotopeList[key].lifetime*12*3600);
 		document.getElementById(key+'ChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
 		document.getElementById(key+'TapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
 		document.getElementById(key+'TapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
