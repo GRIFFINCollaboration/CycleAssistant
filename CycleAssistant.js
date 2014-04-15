@@ -422,11 +422,12 @@ function nthMax(N, rate, t_on, t_off, lifetime){
 }
 
 function Activity(rate, lifetime, time, region){
-	var N, timeSinceLastMax, activityAtLastMax, activity;
+	var N, timeSinceLastMax, activityAtLastMax, activity,
+		Rate = regionScale(region) * rate;
 
 	//if we're in the very first implantation, things are simple: 
 	if(time < window.cycleParameters.beamOn){
-		return stepActivity(0, rate, lifetime, time);
+		return stepActivity(0, Rate, lifetime, time);
 	}
 
 	//how many full cycles have completed before <time>?
@@ -442,7 +443,7 @@ function Activity(rate, lifetime, time, region){
 		timeSinceLastMax -= window.cycleParameters.beamOn;
 	}
 
-	activityAtLastMax = nthMax(N, rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
+	activityAtLastMax = nthMax(N, Rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
 
 	//finish last beam off
 	activity = stepActivity(activityAtLastMax, 0, lifetime, Math.min(timeSinceLastMax, window.cycleParameters.beamOff));
@@ -450,7 +451,7 @@ function Activity(rate, lifetime, time, region){
 		return activity;
 
 	//finish last beam on
-	activity = stepActivity(activity, rate, lifetime, Math.min(timeSinceLastMax-window.cycleParameters.beamOff, window.cycleParameters.beamOn) );
+	activity = stepActivity(activity, Rate, lifetime, Math.min(timeSinceLastMax-window.cycleParameters.beamOff, window.cycleParameters.beamOn) );
 
 	return activity;
 }
