@@ -1,35 +1,44 @@
-//sanity checks for the behaviour of the activity(t0, A0, rate, lifetime, t) function
+//check the behavior over three cycles for nthMax() and Activity()
 function testActivity(){
 	//scale for each region:
-	var scaleConstant;
-	if(window.region == 'tape') scaleConstant = 0.89;
-	else if(window.region == 'chamber') scaleConstant = 0.01;
-	else if(window.region == 'beamline') scaleConstant = 0.1;
+	var Rate = regionScale(window.region) * 1e6,  //pps, scaled for region
+		maxima = [],
+		halfDecay = [],
+		trueMaxima = [],
+		trueHalfDecay = [],
+		lifetime = 24*3600000;		//ms
 
+	//first three maxima
+	maxima[0] = nthMax(1, Rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
+	maxima[1] = nthMax(3, Rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
+	maxima[2] = nthMax(5, Rate, window.cycleParameters.beamOn, window.cycleParameters.beamOff, lifetime);
 
-	//activity at end of duration should come out the same whether iterated from t=0 or in two steps:
-	if (verbose) console.log('Activity for entire duration:')
-	var finalA = activity(0, 0, 1e9, Math.log(2)/36000, window.cycleParameters.duration*3600000 ) 
-	if (verbose) console.log(finalA);
-	if (verbose) console.log('Activity for first half of duration:')
-	var firstHalfA = activity(0, 0, 1e9, Math.log(2)/36000, window.cycleParameters.duration*3600000/2 );
-	if (verbose) console.log(firstHalfA);
-	if (verbose) console.log('Activity at end of duration as computed from first half:')
-	var finalAfromHalfA = activity(window.cycleParameters.duration*3600000/2, firstHalfA, 1e9, Math.log(2)/36000, window.cycleParameters.duration*3600000 );
-	if (verbose) console.log(finalAfromHalfA);
-	console.log('segmentation test passed: ' + (finalAfromHalfA == finalA) );
+	//activity half a decay period after maxima
+	halfDecay[0] = Activity(1e6, lifetime, window.cycleParameters.beamOn + 0.5*window.cycleParameters.beamOff, window.region);
+	halfDecay[1] = Activity(1e6, lifetime, 2*window.cycleParameters.beamOn + 1.5*window.cycleParameters.beamOff, window.region);
+	halfDecay[2] = Activity(1e6, lifetime, 3*window.cycleParameters.beamOn + 2.5*window.cycleParameters.beamOff, window.region);
 
-	//activity change in a single state (beam on or beam off) should be the same as calculated by the canonical function:
-	function canonicalActivity(rate, lifetime, time, initialActivity){
-		return rate * (1 - Math.exp(-1 * lifetime * time)) + initialActivity * Math.exp(-1 * lifetime * time);
-	}
+	//first three maxima, by hand:
+	trueMaxima[0] = Rate * (1 - Math.exp(-lifetime * window.cycleParameters.beamOn) );
+	trueMaxima[1] = trueMaxima[0] * Math.exp(-lifetime * window.cycleParameters.beamOff); //decay down, cycle complete
+	trueMaxima[1] = Rate * (1 - Math.exp(-lifetime * window.cycleParameters.beamOn) ) + trueMaxima[1] * Math.exp(-lifetime * window.cycleParameters.beamOn);
+	trueMaxima[2] = trueMaxima[1] * Math.exp(-lifetime * window.cycleParameters.beamOff); //decay down, cycle complete
+	trueMaxima[2] = Rate * (1 - Math.exp(-lifetime * window.cycleParameters.beamOn) ) + trueMaxima[2] * Math.exp(-lifetime * window.cycleParameters.beamOn);
 
-	if (verbose) console.log('acitivty prediction for first beam on period:')
-	var activityCalc = activity(0, 1000, 10000, Math.log(2)/1, window.cycleParameters.beamOn);
-	if (verbose) console.log(activityCalc);
-	if (verbose) console.log('activity prediction from canonical function:')
-	var canonActivity = canonicalActivity(scaleConstant*10000, Math.log(2)/1, window.cycleParameters.beamOn/1000, 1000);
-	if (verbose) console.log(canonActivity);
-	console.log('simple activity calculation test passed: ' + (activityCalc == canonActivity));
+	//activity half a decay period after maxima, by hand:
+	trueHalfDecay[0] = trueMaxima[0] * Math.exp(-lifetime * window.cycleParameters.beamOff/2);
+	trueHalfDecay[1] = trueMaxima[1] * Math.exp(-lifetime * window.cycleParameters.beamOff/2);
+	trueHalfDecay[2] = trueMaxima[2] * Math.exp(-lifetime * window.cycleParameters.beamOff/2);
+
+	//report
+	console.log('First three maxima report correctly?');
+	console.log(maxima[0] == trueMaxima[0]);
+	console.log(maxima[1] == trueMaxima[1]);
+	console.log(maxima[2] == trueMaxima[2]);
+
+	console.log('First three decays calculated correctly?');
+	console.log(halfDecay[0] == trueHalfDecay[0]);
+	console.log(halfDecay[1] == trueHalfDecay[1]);
+	console.log(halfDecay[2] == trueHalfDecay[2]);
 
 }
