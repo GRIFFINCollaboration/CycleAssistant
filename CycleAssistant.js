@@ -61,6 +61,11 @@ function setup(){
 		}
 	});
 
+	//setting the src attribute of an image tag appears async in FF?  investigate further, this seems to work.
+	document.getElementById('pngDump').addEventListener('load', function(){
+		document.getElementById('savePlot').href = getBase64Image(document.getElementById('pngDump'))
+	})
+
 	//plot something to begin with:
 	tableScrape();
 	repaint();
@@ -372,7 +377,7 @@ function prepImageSave(dygraph, saveButton){
 	};
 
 	Dygraph.Export.asPNG(dygraph, document.getElementById('pngDump'), options);
-	document.getElementById(saveButton).href = getBase64Image(document.getElementById('pngDump'));	
+	
 }
 
 // http://stackoverflow.com/a/934925/298479 + hax
