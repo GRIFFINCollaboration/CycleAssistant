@@ -131,7 +131,7 @@ div#cycleDefinition h2, div#isotopeList h2, div#summaryTable h2{
 
 div#cycleDefinition td, input{
 	font-size: 120%;
-	line-height: 2em;
+	padding: 2px;
 }
 
 div#cycleDefinition input{
@@ -140,17 +140,16 @@ div#cycleDefinition input{
 	border: 0px;
 	color:#EEEEEE;
 	width: 6em;
-	padding:0 0 0 0.5em;
+	padding:0.5em 0 0.5em 0.5em;
 }
 
 select.unitSelect{
 	font-size: 120%;
-	line-height: 2em;
 	background-color: #111111;
 	border-radius: 5px;
 	border: 0px;
 	color:#EEEEEE;
-	padding:0 0.5em 0 0.5em;
+	padding:0.5em;
 	cursor:pointer;
 }
 
@@ -169,13 +168,12 @@ td.unitLabel{
 /*///////////////////*/
 div#isotopeList input, div#isotopeList select{
 	font-size: 120%;
-	line-height: 2em;
 	background-color: #111111;
 	border-radius: 5px;
 	border: 0px;
 	color:#EEEEEE;
 	width: 6em;
-	padding:0 0 0 0.5em;
+	padding:0.5em 0 0.5em 0.5em;
 	margin-right: 2px;
 }
 
@@ -186,7 +184,7 @@ div#isotopeList input::-moz-focus-inner{
 div#isotopeList select{
 	width: 100%;
 	text-align: center;
-	padding: 0 1em 0 1em;
+	padding: 0.5em 1em 0.5em 1em;
 }
 
 td.deleteRow{
@@ -380,6 +378,11 @@ x-StateFlag div.selectedStateDiv{
 	background-color: #EEEEEE;
 	box-shadow: 0px 0px 5px #EEEEEE;
 
+}
+
+/*img holder for savable data///////////////////////////////////////*/
+img#pngDump{
+	display:none;
 }
 
 /*Footer and footer-related styles////////////////////////////////////////////////////*/

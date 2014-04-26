@@ -312,9 +312,9 @@ function generatePostExptCSV(){
 	return data;
 }
 
-//generate the dygraph for the full experiment duration, and refresh the summary table
+//generate the dygraph and refresh the summary table
 function generateDygraph(divID, CSV, title, xlabel, units){
-	window.duringPlot = new Dygraph(document.getElementById(divID), CSV, {
+	window.dygraph = new Dygraph(document.getElementById(divID), CSV, {
 		title: title,
 		xlabel: xlabel,
 		ylabel: 'Activity [counts/s]',
@@ -332,10 +332,70 @@ function generateDygraph(divID, CSV, title, xlabel, units){
 						return number.toFixed(0) + units;
 				}
 			}
-		}
+		},
+		drawCallback: drawCB
 	});
 
 	regenSummaryTable();
+}
+
+//callback wrapper
+function drawCB(dygraph, isFirst){
+	prepImageSave(dygraph, 'savePlot');
+}
+
+//generate a hidden image and send its data uri to the appropriate place for saving:
+function prepImageSave(dygraph, saveButton){
+	var options = {
+
+		//colors: ['#F1C40F', '#2ECC71', '#E74C3C', '#ECF0F1', '#1ABC9C', '#E67E22', '#9B59B6'],
+
+	    //Texts displayed below the chart's x-axis and to the left of the y-axis 
+	    titleFont: "bold 30px sans-serif",
+	    titleFontColor: "black",
+
+	    //Texts displayed below the chart's x-axis and to the left of the y-axis 
+	    axisLabelFont: "bold 24px sans-serif",
+	    axisLabelFontColor: "black",
+
+	    // Texts for the axis ticks
+	    labelFont: "normal 18px sans-serif",
+	    labelFontColor: "black",
+
+	    // Text for the chart legend
+	    legendFont: "bold 18px sans-serif",
+	    legendFontColor: "black",
+
+	    legendHeight: 40    // Height of the legend area
+
+	    
+	};
+
+	Dygraph.Export.asPNG(dygraph, document.getElementById('pngDump'), options);
+	document.getElementById(saveButton).href = getBase64Image(document.getElementById('pngDump'));	
+}
+
+// http://stackoverflow.com/a/934925/298479 + hax
+function getBase64Image(img) {
+	var canvas, ctx, dataURL;
+
+    // Create an empty canvas element
+    canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    // Copy the image contents to the canvas
+    ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    //add extra decorations to the canvas here
+
+    // Get the data-URL formatted image
+    // Firefox supports PNG and JPEG. You could check img.src to guess the
+    // original format, but be aware the using "image/jpg" will re-encode the image.
+    dataURL = canvas.toDataURL("image/png");
+
+    return dataURL;
 }
 
 //regenerate the activity summary table

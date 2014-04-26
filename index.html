@@ -45,6 +45,8 @@
 					</x-card>
 				</x-deck>
 
+				<a id='savePlot' download='activityPlot.png'>Save Plot</a>
+
 				<div id='navWrap'>
 					<!--Single chevrons work in FF, double (+2 to the single chevron codes) don't...-->
 					<div id='previousCardWrap'>&#10216</div>
@@ -148,6 +150,8 @@
 			<canvas id='footerImage' width='550' height='300'></canvas>
 
 		</div>
+
+		<img id='pngDump'></img>
 
 		<script>
 			document.addEventListener('DOMComponentsLoaded', function(){
