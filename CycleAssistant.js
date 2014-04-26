@@ -66,6 +66,10 @@ function setup(){
 		document.getElementById('savePlot').href = getBase64Image(document.getElementById('pngDump'))
 	})
 
+	document.getElementById('plotName').onchange = function(){
+		document.getElementById('savePlot').download = this.value;
+	}
+
 	//plot something to begin with:
 	tableScrape();
 	repaint();

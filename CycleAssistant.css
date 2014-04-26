@@ -312,7 +312,7 @@ div#areaSelect input[type=radio]{
 	display:none;
 }
 
-div#areaSelect input[type=radio] + label, a#savePlot{
+div#areaSelect input[type=radio] + label, a#savePlot, input#plotName{
 	display:inline-block;
 	background-color: #111111;
 	cursor: pointer;
@@ -327,6 +327,12 @@ div#areaSelect input[type=radio] + label, a#savePlot{
 a#savePlot:link, a#savePlot:hover{
 	color: #FFFFFF;
 	text-decoration: none;
+}
+
+input#plotName{
+	font-size: 100%;
+	border:none;
+	color:#FFFFFF;
 }
 
 div#plotToolRow{
