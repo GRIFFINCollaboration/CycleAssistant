@@ -1,173 +1,192 @@
 <html>
-	<head>
-		<title>GRIFFIN Cycle Assistant</title>
-		<link rel="stylesheet" type="text/css" href="CycleAssistant.css"/>
-		<link rel='stylesheet' type='text/css' href='lib/brick-0.9.1.css'>
+    <head>
+        <script src="scripts/jquery1-11-3.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <script src="scripts/bootstrap3-3-5.min.js"></script>
+        <script src="scripts/plotly-latest.min.js"></script>
+        <script src="scripts/plotly-latest.min.js"></script>
+        <script src="scripts/mustache.js"></script>
 
-		<script type="text/javascript" src="lib/dygraph-combined.js"></script>
-		<script type="text/javascript" src="lib/dygraph-extra.js"></script>
-		<script type="text/javascript" src="branding.js"></script>
-		<script type="text/javascript" src="CycleAssistant.js"></script>
-		<script type="text/javascript" src="cycleAssistantTests.js"></script>
-		<script type='text/javascript' src='lib/brick-0.9.1.js'></script>
-		<script type="text/javascript" src="lib/xInputTable.js"></script>
-		<script type="text/javascript" src="lib/xStateFlag.js"></script>
+        <script type="text/javascript" src = "scripts/cycleAssistant.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/cycleAssistant.css"/>
 
-	</head>
+        <!--simple templates-->
 
-	<body>
+        <script id='cocktailRow' type='text/template'>
+            <tr id='{{id}}row'>
+                <td><input id='{{id}}name' type='text'></input></td>
+                <td><input id='{{id}}halfLife' type='number' min='0' step='any' value='0'></input></td>
+                <td>
+                    <select id='{{id}}halfLifeUnit'>
+                        <option value='1'>s</option>
+                        <option value='60'>min</option>
+                        <option value='3600'>h</option>
+                        <option value='86400'>days</option>
+                        <option value='31557600'>years</option>
+                    </select>
+                </td>
+                <td><input id='{{id}}yield' type='number' min='0' step='any' value='0'></input></td>
+                <td class='center'><input id='{{id}}enabled' type='checkbox' checked></input></td>
+                <td class='center'>
+                    <button class='btn btn-danger' onclick=removeBeamIsotope('{{id}}row')>
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </button>
+                </td>
+            </tr>
+        </script>
+    </head>
 
-		<div id='wrapper'>
+    <body>
 
-			<div id='header'>
-				<img id='logo' width='92.5' height='111' src='img/GRIFFIN_Logo_White_small.png'></img>
-				<div id='title'>
-					<h1 id='headline'>GRIFFIN</h1>
-					<h2 id='subline'>TOOLKIT</h2>
-				</div>
-			</div>
+        <!--header-->
+        <div class='branding header'>
+            <h1>Cycle Assistant</h1>
+        </div>
 
-			<div id='mainContent'>
-				<x-deck id='plotDeck' selected-index='0'>
-					<x-card id='duringPlotCard'>
-						<div id='duringPlot'></div>
-					</x-card>
+        <div class='sectionWrapper'>
+            <div id='config' class='col-md-3 content'>
+                <h2>Configuration</h2>
 
-					<x-card id='cyclePlotCard'>
-						<div id='cyclePlot'></div>
-					</x-card>
+                <form onchange=parseConfigTable()>
+                    <div>
+                        <h4>Region</h4>
+                        <ul>
+                            <li>
+                                <input id='box' type='radio' name='region' value='box' checked></input>
+                                <label for='box'>In the tape box</label>
+                            </li>
+                            <li>
+                                <input id='chamber' type='radio' name='region' value='chamber'></input>
+                                <label for='box'>In the chamber</label>
+                            </li>
+                            <li>
+                                <input id='beam' type='radio' name='region' value='beam'></input>
+                                <label for='beam'>Along the beamline</label>
+                            </li>
+                        </ul>
+                    </div>
 
-					<x-card id='cyclePlotCard'>
-						<div id='lastCyclesPlot'></div>
-					</x-card>
+                    <div>
+                        <h4>Cycle Definition</h4>  
+                        <ul>
+                            <li>
+                                <label for='beamOn'>Beam On: </label>
+                                <input id='beamOn' type='number' min='0' step='1' value='1000'></input>
+                                <select id='beamOnUnit'>
+                                    <option value='1'>ms</option>
+                                    <option value='1000'>s</option>
+                                    <option value='60000'>min</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label for='beamOff'>Beam Off: </label>
+                                <input id='beamOff' type='number' min='0' step='1' value='1000'></input>
+                                <select id='beamOffUnit'>
+                                    <option value='1'>ms</option>
+                                    <option value='1000'>s</option>
+                                    <option value='60000'>min</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label for='exptDuration'>Experimental Duration: </label>
+                                <div class='chunkWrap'>
+                                    <input id='exptDuration' type='number' min='0' step='1' value='12'></input>
+                                    <select id='exptDurationUnit'>
+                                        <option value='1'>h</option>
+                                        <option value='24'>days</option>
+                                        <option id='shiftUnit' value='8'>8h shifts</option>
+                                    </select>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
 
-					<x-card id='afterPlotCard'>
-						<div id='afterPlot'></div>
-					</x-card>
-				</x-deck>
+            <div class='col-md-8 content'>
+                <h2>Beam Cocktail</h2>
 
-				<div id='navWrap'>
-					<!--Single chevrons work in FF, double (+2 to the single chevron codes) don't...-->
-					<div id='previousCardWrap'>&#10216</div>
-					<x-StateFlag id='stateFlag' nStates='4'></x-StateFlag>
-					<div id='nextCardWrap'>&#10217</div>
-				</div>
+                <form id='beamCocktail' onchange=parseBeamList()>
+                    <table id='beamCocktailTable' class='table'>
+                        <tr>
+                            <td>Isotope</td>
+                            <td>Half-Life</td>
+                            <td>Half-Life (unit)</td>
+                            <td>Yield / s</td>
+                            <td class='center'>Include</td>
+                            <td class='center'>Remove</td>
+                        </tr>
+                    </table>
+                </form>
 
-				<div id='plotToolRow'>
-					<a id='savePlot' download='activityPlot.png'>Save Plot</a>
-					<input type='text' id='plotName' value='activityPlot.png'></input>
-				</div>
+                <button id='addBeamSpecies' class='btn btn-primary'>Add new isotope</button>
+            </div>
+        </div>
 
-				<div id='areaSelect'>
-					<input type='radio' name='area' id='tape' value='tape' checked='true'></input>
-					<label id='tapeLabel' for='tape'>In the Tape Box</label>
-					<input type='radio' name='area' id='chamber' value='chamber'></input>
-					<label id='chamberLabel' for='chamber'>In the Chamber</label>
-					<input type='radio' name='area' id='beamline' value='beamline'></input>
-					<label id='beamlineLabel' for='beamline'>Along the Beamline</label>
-				</div>
+        <div class='sectionWrapper'>
+            <div class='col-md-6'>
+                <div id='peakPlot'></div>
+            </div>
+            <div class='col-md-6'>
+                <div id='firstThreeCyclesPlot'></div>
+            </div>
+        </div>
 
-				<div id='cycleDefinition'>
-					<h2>Cycle Definition</h2>
-					<table>
-						<tr>
-							<td class='leadLabel'>Beam On</td>
-							<td><input id='onTime' type='number' min='0' value='1000' step='any' onchange='cycleParameterScrape()'></input></td>
-							<td>
-								<select id='selectBeamOnUnit' class='unitSelect' onchange='cycleParameterScrape()'>
-									<option value='1'>ms</option>
-									<option value='1000'>s</option>
-									<option value='60000'>min</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<td class='leadLabel'>Beam Off</td>
-							<td><input id='offTime' type='number' min='0' value='1000' step='any' onchange='cycleParameterScrape()'></input></td>
-							<td>
-								<select id='selectBeamOffUnit' class='unitSelect' onchange='cycleParameterScrape()'>
-									<option value='1'>ms</option>
-									<option value='1000'>s</option>
-									<option value='60000'>min</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<td class='leadLabel'>Expt. Duration</td>
-							<td><input id='expDuration' type='number' min='0' value='12' step='any' onchange='cycleParameterScrape()'></input></td>
-							<td>
-								<select id='selectExpDurationUnit' class='unitSelect' onchange='cycleParameterScrape()'>
-									<option value='1'>h</option>
-									<option value='24'>days</option>
-									<option value='12' selected>shifts</option>
-								</select>
-							</td>
-						</tr>
-					</table>
-				</div>
+        <div class='sectionWrapper'>
+            <div class='col-md-6'>
+                <div id='lastThreeCyclesPlot'></div>
+            </div>
+            <div class='col-md-6'>
+                <div id='afterPlot'></div>
+            </div>
+        </div>
 
-				<div id='isotopeList'>
-					<h2>Isotope List</h2>
-					<x-InputTable id='isotopeTable' columns='Isotope,Half-Life,Half-Life [unit],Yield/s,Hide/Show' types='text,number,select,number,checkbox' values=',1,,0', selectOptions='s,min,hours,days,years' selectValues='1,60,3600,86400,31557600', minima=',0,,0'></x-InputTable>
-					<button id='addrow'>New Isotope</button>
-				</div>
+        <div class='sectionWrapper'>
+            <div class='col-md-11 content'>
+                <h2>Activity Summary</h2>
 
-				<div id='summaryTable'>
-					<h2>Activity Summary</h2>
-					<table id='summaryActivity'></table>
-				</div>
-			</div>
+                <table class='table'>
+                    <tr>
+                        <td>Isotope</td>
+                        <td>Chamber - Post Expt.</td>
+                        <td>Tape Box - Post Expt.</td>
+                        <td>Tape Box - 12 h later</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
 
-			<div id='push'></div>
+        <div id='footer' class='branding footer'>
+            <h3>Built at TRIUMF</h3>
+            <div class='col-md-4'>
+                <div>&copy; 2014-2015 GRIFFIN Collaboration</div>
+                <a href='https://github.com/GRIFFINCollaboration/CycleAssistant'>Source Code on GitHub</a>
+            </div>
+        </div>
 
-		</div>
+        <script>
+            //dataStore: globals go here.
+            dataStore = {
+                "shiftLength": 8,   // shift length in hours
+                "isotopeIndex": 0,  // unique index number for all rows added to beam cocktail table
+                "beamSpecies": []
+            }
 
-		<div id='footer'>
+            //setup
 
-			<div class='textBlock'>
-				<h3>Built in Vancouver by the GRIFFIN Collaboration</h3>
+            //update length of shift
+            document.getElementById('shiftUnit').setAttribute('value', dataStore.shiftLength);
+            document.getElementById('shiftUnit').innerHTML = dataStore.shiftLength + 'h shifts';
 
-				<p>
-					Code available on <a href='https://github.com/GRIFFINCollaboration'>Github</a>
-					<br>
-					Copyright &#169 2014 GRIFFIN Collaboration
-					<br>
-					All code freely available under MIT license.
-				</p>
+            //plug in beam isotope table, and start with one row:
+            document.getElementById('addBeamSpecies').onclick = addBeamIsotope;
+            addBeamIsotope();
 
-				<table>
-					<tr>
-						<td>
-							<a class='imgLink' href='https://github.com/GRIFFINCollaboration'>
-								<img id='gitLogo' width='72' height='72' src='img/GitHub-Mark-Light-64px.png'></img>
-							</a>
-						</td>
-						<td>
-							<a class='imgLink' href='http://www.triumf.ca/griffin'>
-								<img id='griffLogo' width='65' height='78' src='img/GRIFFIN_Logo_White_small.png'></img>
-							</a>
-						</td>
-					</tr>
-				</table>
-			</div>
+            //ingest the default config
+            parseConfigTable();
 
-			<canvas id='footerImage' width='550' height='300'></canvas>
+        </script>
 
-		</div>
-
-		<img id='pngDump'></img>
-
-		<script>
-			document.addEventListener('DOMComponentsLoaded', function(){
-				setup();
-
-				//testing
-				//verbose = true;
-				testActivity();
-
-			});
-		</script>
-
-	</body>
+    </body>
 
 </html>
