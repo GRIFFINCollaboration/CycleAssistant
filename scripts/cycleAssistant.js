@@ -86,7 +86,7 @@ function parseBeamList(){
 
     parseConfigTable();
     repaint();
-    populateSummaryTable();
+    //populateSummaryTable();
 }
 
 function parseConfigTable(){
@@ -175,7 +175,7 @@ function generatePeakData(){
         for(j=0; j<dataStore.beamSpecies.length; j++){
             if(dataStore.beamSpecies[j].enabled){
                 data[dataStore.beamSpecies[j].name].push(   nthMax(i*nStep*2 + 1, 
-                                                                dataStore.beamSpecies[j].yield, 
+                                                                dataStore.beamSpecies[j].yield * regionScale(dataStore.config.region), 
                                                                 beamOn, 
                                                                 beamOff, 
                                                                 dataStore.beamSpecies[j].lifetime/1000) 
