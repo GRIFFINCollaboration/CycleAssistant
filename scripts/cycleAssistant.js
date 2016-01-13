@@ -86,7 +86,7 @@ function parseBeamList(){
 
     parseConfigTable();
     repaint();
-    //populateSummaryTable();
+    populateSummaryTable();
 }
 
 function parseConfigTable(){
@@ -418,6 +418,7 @@ function plotActivity(data, timeUnits, divID, title){
             },
             yaxis:{
                 title: 'Activity',
+                rangemode: 'tozero'
             },
             autosize: false,
             width: dim,
