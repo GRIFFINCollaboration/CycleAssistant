@@ -105,9 +105,7 @@ function repopulateBeamList(){
 
 function generatePeakData(){
     var data, time,
-        key, i, j, nTransitions,
-        foundAnIsotope = false,
-        propTime, 
+        i, j, nTransitions,
         nStep,
         beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit, // in ms
         beamOff = dataStore.config.beamOff*dataStore.config.beamOffUnit; // in ms
@@ -148,7 +146,7 @@ function generatePeakData(){
                                                                 beamOn, 
                                                                 beamOff, 
                                                                 dataStore.beamSpecies[j].lifetime/1000) 
-                                                            + chamberOffset(time, key)
+                                                            + chamberOffset(time, dataStore.beamSpecies[j].lifetime, dataStore.beamSpecies[j].yield)
                                                         );
             }
         }
@@ -159,7 +157,48 @@ function generatePeakData(){
 
 function generateFirstThreeCyclesData(){
 
-    return [[0,1,2,3], [100,101,102,103]]
+    var data, time,
+        nPoints = 800,
+        foundAnIsotope = false,
+        key, i, nextline,
+        propTime, 
+        tempTerm = 0,
+        nStep,
+        beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit, // in ms
+        beamOff = dataStore.config.beamOff*dataStore.config.beamOffUnit; // in ms
+    
+    data = {
+        "time" : []
+    }
+
+    //set up arrays for all beam species of interest
+    for(i=0; i<dataStore.beamSpecies.length; i++){
+        if(dataStore.beamSpecies[i].enabled){
+            data[dataStore.beamSpecies[i].name] = [];
+        }
+    }
+
+    for(i=0; i<nPoints; i++){
+        //add the x-value to the list:
+        time = (3*(beamOn + beamOff)/nPoints)*i;
+        data.time.push(time / 3600000 / dataStore.config.exptDurationUnit);
+
+        //add a y-value for each isotope:
+        for(j=0; j<dataStore.beamSpecies.length; j++){
+            if(dataStore.beamSpecies[j].enabled){
+                data[dataStore.beamSpecies[j].name].push(   Activity(
+                                                                dataStore.beamSpecies[j].yield, 
+                                                                dataStore.beamSpecies[j].lifetime/1000, 
+                                                                time, 
+                                                                dataStore.config.region
+                                                            )
+                                                            + chamberOffset(time, dataStore.beamSpecies[j].lifetime, dataStore.beamSpecies[j].yield)
+                                                        );
+            }
+        }
+    }
+
+    return data;
 }
 
 function generateLastThreeCyclesData(){
@@ -183,7 +222,7 @@ function nthMax(N, rate, t_on, t_off, lifetime){
     return max*numerator/denominator;
 }
 
-function chamberOffset(time, index){
+function chamberOffset(time, lifetime, yield){
     //the chamber sees not only the 1% activity that backscatters into it,
     //but some extra activity from the 89% that is deposited on the tape in the
     //beamspot; this extra term is independent of cycle number though, since
@@ -191,7 +230,7 @@ function chamberOffset(time, index){
     //tape box between beam off -> beam on.  Thus we can just caluclate it as a 
     //simple correction to be tacked on at the end, that doesn't depend on where in the
     //experiment we are.
-    //<time>[ms] into experiment, <index> from dataStore.beamSpecies indicating which isotope we're doing this for
+    //<time>[ms] into experiment, yield s-1, lifetime s-1
 
     var propTime, tempTerm,
         beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit,
@@ -201,10 +240,10 @@ function chamberOffset(time, index){
 
     propTime = time % (beamOn + beamOff) //time into this cycle
     if (propTime < beamOn) //still in irradiation step:
-        tempTerm = stepActivity(0, 0.89*dataStore.beamSpecies[i].yield, dataStore.beamSpecies[i].lifetime, propTime/1000);
+        tempTerm = stepActivity(0, 0.89*yield, lifetime, propTime/1000);
     else{ //completed irradiation step, now in decay step
-        tempTerm = stepActivity(0, 0.89*dataStore.beamSpecies[i].yield, dataStore.beamSpecies[i].lifetime, beamOn/1000);
-        tempTerm = stepActivity(tempTerm, 0, dataStore.beamSpecies[i].lifetime, (propTime - beamOn)/1000);
+        tempTerm = stepActivity(0, 0.89*yield, lifetime, beamOn/1000);
+        tempTerm = stepActivity(tempTerm, 0, lifetime, (propTime - beamOn)/1000);
     }
 
     return tempTerm;
@@ -213,6 +252,52 @@ function chamberOffset(time, index){
 function stepActivity(A0, rate, lifetime, time){
     //starting with initial activity <A0>, return Activity after <time>, under beam <rate> for isotope with <lifetime>
     return rate * (1 - Math.exp(-1*lifetime*time)) + A0 * Math.exp(-1*lifetime*time);
+}
+
+function Activity(rate, lifetime, time, region){
+    // activity [s-1] at <time [ms]>, for an isotope with <lifetime [ms-1]>, initial activity <A0 [s-1]> and production <rate [s-1]>
+
+    var N, timeSinceLastMax, activityAtLastMax, activity,
+        Rate = regionScale(region) * rate,
+        beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit,
+        beamOff = dataStore.config.beamOff*dataStore.config.beamOffUnit;
+
+    //if we're in the very first implantation, things are simple: 
+    if(time < beamOn){
+        return stepActivity(0, Rate, lifetime, time);
+    }
+
+    //how many full cycles have completed before <time>?
+    N = Math.floor(time / (beamOn + beamOff));
+    //how much time has elapsed in the final cycle before <time>?
+    timeSinceLastMax = time - N*(beamOn + beamOff);
+
+    if(timeSinceLastMax < beamOn){
+        N = 2*N-1;
+        timeSinceLastMax += beamOff;
+    } else {
+        N = 2*N+1;
+        timeSinceLastMax -= beamOn;
+    }
+
+    activityAtLastMax = nthMax(N, Rate, beamOn, beamOff, lifetime);
+
+    //finish last beam off
+    activity = stepActivity(activityAtLastMax, 0, lifetime, Math.min(timeSinceLastMax, beamOff));
+    if(timeSinceLastMax < beamOff)
+        return activity;
+
+    //finish last beam on
+    activity = stepActivity(activity, Rate, lifetime, Math.min(timeSinceLastMax-beamOff, beamOn) );
+
+    return activity;
+}
+
+function regionScale(region){
+    //return the appropriate scale constant as a function of <region>:
+    if(region == 'box') return 0.89;
+    else if(region == 'chamber') return 0.01;
+    else if(region == 'beam') return 0.1;
 }
 
 ////////////////
@@ -259,7 +344,7 @@ function repaint(){
     if(dataStore.beamSpecies.length == 0) return;
 
     plotActivity(generatePeakData(), dataStore.config.exptDurationScale, 'peakPlot', 'Peak Activity During Experiment');
-    //plotWaveform(generateFirstThreeCyclesData(), dataStore.config.exptDurationScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
+    plotActivity(generateFirstThreeCyclesData(), dataStore.config.exptDurationScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
     //plotWaveform(generateLastThreeCyclesData(), dataStore.config.exptDurationScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
     //plotWaveform(generateAfterExperimentData(), dataStore.config.exptDurationScale, 'afterPlot', 'Activity After Experiment');
 }
