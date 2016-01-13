@@ -210,7 +210,7 @@ function generateFirstThreeCyclesData(){
     for(i=0; i<nPoints; i++){
         //add the x-value to the list:
         time = (3*(beamOn + beamOff)/nPoints)*i;
-        data.time.push(time / 3600000 / dataStore.config.exptDurationUnit);
+        data.time.push(time / dataStore.config.beamOnUnit);
 
         //add a y-value for each isotope:
         for(j=0; j<dataStore.beamSpecies.length; j++){
@@ -254,7 +254,7 @@ function generateLastThreeCyclesData(){
     for(i=0; i<nPoints; i++){
         //add the x-value to the list:
         time = dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000 - 3*(beamOn + beamOff) + (3*(beamOn + beamOff)/nPoints)*i;
-        data.time.push(time / 3600000 / dataStore.config.exptDurationUnit);
+        data.time.push(time / dataStore.config.beamOnUnit);
 
         //add a y-value for each isotope:
         for(j=0; j<dataStore.beamSpecies.length; j++){
@@ -445,13 +445,21 @@ function plotActivity(data, timeUnits, divID, title){
 
 function repaint(){
     //repaint all plots
+    var cycleScale;
 
     if(dataStore.beamSpecies.length == 0) return;
 
+    if(dataStore.config.beamOnUnit == 1)
+        cycleScale = 'ms';
+    else if(dataStore.config.beamOnUnit == 1000)
+        cycleScale = 's';
+    else if(dataStore.config.beamOnUnit == 60000)
+        cycleScale = 'min';
+
     plotActivity(generatePeakData(), dataStore.config.exptDurationScale, 'peakPlot', 'Peak Activity During Experiment');
-    plotActivity(generateFirstThreeCyclesData(), dataStore.config.exptDurationScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
-    plotActivity(generateLastThreeCyclesData(), dataStore.config.exptDurationScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
-    plotActivity(generateAfterExperimentData(), dataStore.config.exptDurationScale, 'afterPlot', 'Activity After Experiment');
+    plotActivity(generateFirstThreeCyclesData(), cycleScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
+    plotActivity(generateLastThreeCyclesData(), cycleScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
+    plotActivity(generateAfterExperimentData(), 'h', 'afterPlot', 'Activity After Experiment');
 }
 
 function populateSummaryTable(){
