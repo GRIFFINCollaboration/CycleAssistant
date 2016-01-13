@@ -159,11 +159,7 @@ function generateFirstThreeCyclesData(){
 
     var data, time,
         nPoints = 800,
-        foundAnIsotope = false,
-        key, i, nextline,
-        propTime, 
-        tempTerm = 0,
-        nStep,
+        i, j, 
         beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit, // in ms
         beamOff = dataStore.config.beamOff*dataStore.config.beamOffUnit; // in ms
     
@@ -202,13 +198,89 @@ function generateFirstThreeCyclesData(){
 }
 
 function generateLastThreeCyclesData(){
+    //create the CSV string for the last three cycles 
+    //(note this is actually the last 3 cycles worth of time, if the expt duration % cycle time != 0 then there will be a corresponding offset here)
 
-    return [[0,1,2,3], [100,101,102,103]]
+    var data, time,
+        nPoints = 800,
+        i, j,
+        beamOn = dataStore.config.beamOn*dataStore.config.beamOnUnit, // in ms
+        beamOff = dataStore.config.beamOff*dataStore.config.beamOffUnit; // in ms
+    
+    data = {
+        "time" : []
+    }
+
+    //set up arrays for all beam species of interest
+    for(i=0; i<dataStore.beamSpecies.length; i++){
+        if(dataStore.beamSpecies[i].enabled){
+            data[dataStore.beamSpecies[i].name] = [];
+        }
+    }
+
+    for(i=0; i<nPoints; i++){
+        //add the x-value to the list:
+        time = dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000 - 3*(beamOn + beamOff) + (3*(beamOn + beamOff)/nPoints)*i;
+        data.time.push(time / 3600000 / dataStore.config.exptDurationUnit);
+
+        //add a y-value for each isotope:
+        for(j=0; j<dataStore.beamSpecies.length; j++){
+            if(dataStore.beamSpecies[j].enabled){
+                data[dataStore.beamSpecies[j].name].push(   Activity(
+                                                                dataStore.beamSpecies[j].yield, 
+                                                                dataStore.beamSpecies[j].lifetime/1000, 
+                                                                time, 
+                                                                dataStore.config.region
+                                                            )
+                                                            + chamberOffset(time, dataStore.beamSpecies[j].lifetime, dataStore.beamSpecies[j].yield)
+                                                        );
+            }
+        }
+    }
+
+    return data;
 }
 
 function generateAfterExperimentData(){
+    //create the CSV string for the 1000-hour post-experiment decay
 
-    return [[0,1,2,3], [100,101,102,103]]
+    var data, time,
+        nPoints = 800,
+        i, j;
+
+    data = {
+        "time" : []
+    }
+
+    //set up arrays for all beam species of interest
+    for(i=0; i<dataStore.beamSpecies.length; i++){
+        if(dataStore.beamSpecies[i].enabled){
+            data[dataStore.beamSpecies[i].name] = [];
+        }
+    }
+
+
+    for(i=0; i<nPoints; i++){
+        //add the x-value to the list:
+        time = (1000 / nPoints)*i*3600000;
+        data.time.push((1000 / nPoints)*i);
+
+        //add a y-value for each isotope:
+        for(j=0; j<dataStore.beamSpecies.length; j++){
+            if(dataStore.beamSpecies[j].enabled){
+                data[dataStore.beamSpecies[j].name].push(   Activity(
+                                                                dataStore.beamSpecies[j].yield, 
+                                                                dataStore.beamSpecies[j].lifetime/1000, 
+                                                                dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000, 
+                                                                dataStore.config.region
+                                                            )
+                                                            * Math.exp(-dataStore.beamSpecies[j].lifetime * time/1000)
+                                                        );
+            }
+        }
+    }
+
+    return data;
 }
 
 function nthMax(N, rate, t_on, t_off, lifetime){
@@ -345,8 +417,8 @@ function repaint(){
 
     plotActivity(generatePeakData(), dataStore.config.exptDurationScale, 'peakPlot', 'Peak Activity During Experiment');
     plotActivity(generateFirstThreeCyclesData(), dataStore.config.exptDurationScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
-    //plotWaveform(generateLastThreeCyclesData(), dataStore.config.exptDurationScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
-    //plotWaveform(generateAfterExperimentData(), dataStore.config.exptDurationScale, 'afterPlot', 'Activity After Experiment');
+    plotActivity(generateLastThreeCyclesData(), dataStore.config.exptDurationScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
+    plotActivity(generateAfterExperimentData(), dataStore.config.exptDurationScale, 'afterPlot', 'Activity After Experiment');
 }
 
 ////////////////
