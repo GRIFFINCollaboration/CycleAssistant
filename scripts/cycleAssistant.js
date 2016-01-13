@@ -5,12 +5,21 @@
 function addBeamIsotope(){
     //insert the html for a new row in the beam isotope table
 
-    document.getElementById('beamCocktailTable').innerHTML += Mustache.to_html(
+    var table = document.getElementById('beamCocktailTable').getElementsByTagName('tbody'),
+        newRow = document.createElement('tr');
+
+    newRow.setAttribute('id', dataStore.isotopeIndex + 'row');
+    newRow.innerHTML = Mustache.to_html(
         document.getElementById('cocktailRow').innerHTML, 
         {
             'id': dataStore.isotopeIndex
         }
     );
+
+    table[0].appendChild(newRow) 
+
+    //also tack on a row to the summary table
+    addSummaryRow(dataStore.isotopeIndex + 'row');
 
     dataStore.isotopeIndex += 1;
     repopulateBeamList()
@@ -22,7 +31,28 @@ function removeBeamIsotope(targetRowID){
     var node = document.getElementById(targetRowID);
     node.parentNode.removeChild(node);
 
+    //also remove the summary row:
+    node = document.getElementById(targetRowID+'Summary');
+    node.parentNode.removeChild(node);
+
     parseBeamList()
+}
+
+function addSummaryRow(rowID){
+    //add a row to the summary table
+
+    var table = document.getElementById('summaryActivity').getElementsByTagName('tbody'),
+        newRow = document.createElement('tr');
+
+    newRow.setAttribute('id', rowID+'Summary');
+    newRow.innerHTML = Mustache.to_html(
+        document.getElementById('summaryRow').innerHTML, 
+        {
+            'key': rowID+'Summary'
+        }
+    );
+
+    table[0].appendChild(newRow);
 }
 
 ////////////////////////
@@ -49,11 +79,14 @@ function parseBeamList(){
             "halfLifeUnit": halfLifeUnit,
             "lifetime": Math.log(2) / halfLife / halfLifeUnit, // in s-1
             "yield": parseFloat(document.getElementById(index + 'yield').value),
-            "enabled": document.getElementById(index + 'enabled').checked
+            "enabled": document.getElementById(index + 'enabled').checked,
+            "rowID": isotopes[i].id
         })
     }
 
+    parseConfigTable();
     repaint();
+    populateSummaryTable();
 }
 
 function parseConfigTable(){
@@ -327,7 +360,7 @@ function stepActivity(A0, rate, lifetime, time){
 }
 
 function Activity(rate, lifetime, time, region){
-    // activity [s-1] at <time [ms]>, for an isotope with <lifetime [ms-1]>, initial activity <A0 [s-1]> and production <rate [s-1]>
+    // activity [s-1] at <time [ms]>, for an isotope with <lifetime [ms-1]>, and production <rate [s-1]>
 
     var N, timeSinceLastMax, activityAtLastMax, activity,
         Rate = regionScale(region) * rate,
@@ -372,9 +405,9 @@ function regionScale(region){
     else if(region == 'beam') return 0.1;
 }
 
-////////////////
-//plotting
-////////////////
+///////////////////////////
+//plotting + reporting
+///////////////////////////
 
 function plotActivity(data, timeUnits, divID, title){
 
@@ -421,6 +454,33 @@ function repaint(){
     plotActivity(generateAfterExperimentData(), dataStore.config.exptDurationScale, 'afterPlot', 'Activity After Experiment');
 }
 
+function populateSummaryTable(){
+    //refresh number in the summary table
+
+    var i, key,
+        postChamber, postTape, postTapeLater;
+
+    for(i=0; i<dataStore.beamSpecies.length; i++){
+        key = dataStore.beamSpecies[i].rowID;
+
+        document.getElementById(key+'SummaryIsotope').innerHTML = dataStore.beamSpecies[i].name;
+
+        if(!dataStore.beamSpecies[i].enabled){
+            document.getElementById(key+'SummaryChamberRes').innerHTML = 'disabled';
+            document.getElementById(key+'SummaryTapeRes').innerHTML = 'disabled';
+            document.getElementById(key+'SummaryTapeResLater').innerHTML = 'disabled';
+            return;
+        }
+
+        postChamber = Activity(dataStore.beamSpecies[i].yield, dataStore.beamSpecies[i].lifetime/1000, dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000, 'chamber');
+        postTape = Activity(dataStore.beamSpecies[i].yield, dataStore.beamSpecies[i].lifetime/1000, dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000, 'box');
+        postTapeLater = Activity(dataStore.beamSpecies[i].yield, dataStore.beamSpecies[i].lifetime/1000, dataStore.config.exptDuration*dataStore.config.exptDurationUnit*3600000, 'box')*Math.exp(-dataStore.beamSpecies[i].lifetime*12*3600);
+        document.getElementById(key+'SummaryChamberRes').innerHTML = printBQ(postChamber) + '<br>' + printCi(postChamber)
+        document.getElementById(key+'SummaryTapeRes').innerHTML = printBQ(postTape) + '<br>' + printCi(postTape)
+        document.getElementById(key+'SummaryTapeResLater').innerHTML = printBQ(postTapeLater) + '<br>' + printCi(postTapeLater)
+    }
+}
+
 ////////////////
 // helpers
 ////////////////
@@ -445,4 +505,20 @@ function checkedRadio(name){
     }
 
     return null
+}
+
+function printBQ(activity){
+    //return an activity in Bq, with a reasonable SI prefix:
+    if(activity > 1000000) return (activity/1000000).toFixed(3) + ' MBq'
+    else if(activity > 1000) return (activity/1000).toFixed(3) + ' kBq'
+    else return (activity).toFixed(3) + ' Bq'
+}
+
+
+function printCi(activity){
+    //return an activity in Ci, with a reasonable SI prefix:
+    var ci = activity / 3.7e+10;
+    if(ci > 1e-3) return (ci*1000).toFixed(3) + ' mCi'
+    else if(ci > 1e-6) return (ci*1000000).toFixed(3) + ' uCi'
+    else return (ci*1000000000).toFixed(3) + ' nCi'
 }

@@ -12,27 +12,32 @@
 
         <!--simple templates-->
 
-        <script id='cocktailRow' type='text/template'>
-            <tr id='{{id}}row'>
-                <td><input id='{{id}}name' type='text'></input></td>
-                <td><input id='{{id}}halfLife' type='number' min='0' step='any' value='0'></input></td>
-                <td>
-                    <select id='{{id}}halfLifeUnit'>
-                        <option value='1'>s</option>
-                        <option value='60'>min</option>
-                        <option value='3600'>h</option>
-                        <option value='86400'>days</option>
-                        <option value='31557600'>years</option>
-                    </select>
-                </td>
-                <td><input id='{{id}}yield' type='number' min='0' step='any' value='0'></input></td>
-                <td class='center'><input id='{{id}}enabled' type='checkbox' checked></input></td>
-                <td class='center'>
-                    <button class='btn btn-danger' onclick=removeBeamIsotope('{{id}}row')>
-                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                    </button>
-                </td>
-            </tr>
+        <script id='cocktailRow' type='text/template'>            
+            <td><input id='{{id}}name' type='text'></input></td>
+            <td><input id='{{id}}halfLife' type='number' min='0' step='any' value='0'></input></td>
+            <td>
+                <select id='{{id}}halfLifeUnit'>
+                    <option value='1'>s</option>
+                    <option value='60'>min</option>
+                    <option value='3600'>h</option>
+                    <option value='86400'>days</option>
+                    <option value='31557600'>years</option>
+                </select>
+            </td>
+            <td><input id='{{id}}yield' type='number' min='0' step='any' value='0'></input></td>
+            <td class='center'><input id='{{id}}enabled' type='checkbox' checked></input></td>
+            <td class='center'>
+                <button class='btn btn-danger' onclick=removeBeamIsotope('{{id}}row')>
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                </button>
+            </td>
+        </script>
+
+        <script id='summaryRow' type='text/template'>
+            <td id='{{key}}Isotope'></td>
+            <td id='{{key}}ChamberRes'></td>
+            <td id='{{key}}TapeRes'></td>
+            <td id='{{key}}TapeResLater'></td>
         </script>
     </head>
 
@@ -47,7 +52,7 @@
             <div id='config' class='col-md-3 content'>
                 <h2>Configuration</h2>
 
-                <form onchange=parseConfigTable()>
+                <form>
                     <div>
                         <h4>Region</h4>
                         <ul>
@@ -106,7 +111,7 @@
             <div class='col-md-8 content'>
                 <h2>Beam Cocktail</h2>
 
-                <form id='beamCocktail' onchange=parseBeamList()>
+                <form id='beamCocktail'>
                     <table id='beamCocktailTable' class='table'>
                         <tr>
                             <td>Isotope</td>
@@ -120,6 +125,7 @@
                 </form>
 
                 <button id='addBeamSpecies' class='btn btn-primary'>Add new isotope</button>
+                <button id='addBeamSpecies' class='btn btn-success' onclick=parseBeamList()>Recalculate</button>
             </div>
         </div>
 
@@ -145,7 +151,7 @@
             <div class='col-md-11 content'>
                 <h2>Activity Summary</h2>
 
-                <table class='table'>
+                <table id='summaryActivity' class='table'>
                     <tr>
                         <td>Isotope</td>
                         <td>Chamber - Post Expt.</td>
