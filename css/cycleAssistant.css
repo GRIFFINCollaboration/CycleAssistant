@@ -1,4 +1,8 @@
 /*general*/
+body {
+    background-color: #ECF0F1;
+}
+
 ul {
     list-style-type: none;
     padding: 0px;
