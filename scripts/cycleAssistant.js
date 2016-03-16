@@ -457,7 +457,7 @@ function repaint(){
     else if(dataStore.config.beamOnUnit == 60000)
         cycleScale = 'min';
 
-    plotActivity(generatePeakData(), dataStore.config.exptDurationScale, 'peakPlot', 'Peak Activity During Experiment');
+    plotActivity(generatePeakData(), dataStore.config.exptDurationScale, 'peakPlot', 'Peak Activity Per Cycle');
     plotActivity(generateFirstThreeCyclesData(), cycleScale, 'firstThreeCyclesPlot', 'Activity Over First Three Cycles');
     plotActivity(generateLastThreeCyclesData(), cycleScale, 'lastThreeCyclesPlot', 'Activity Over Last Three Cycles');
     plotActivity(generateAfterExperimentData(), 'h', 'afterPlot', 'Activity After Experiment');
